@@ -4,7 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "PawnStruct.h"
 #include "Pawn_Template.generated.h"
+
+class ABulletBase;
+class USphereComponent;
+class UStaticMeshComponent;
+class UPathFollowerComponent;
 
 UCLASS()
 class UNREALPROJECT_API APawn_Template : public APawn
@@ -17,37 +23,37 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+
 	//비행기 충돌 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class USphereComponent* CollisionComponent;
+	 USphereComponent* CollisionComponent;
 
 	//비행기 외형 프리팹
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UStaticMeshComponent* PlaneMesh; 
+	 UStaticMeshComponent* PlaneMesh; 
 
-	//카메라 지지대 
+	//경로 따라가는 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class USpringArmComponent* SpringArm; 
+	 UPathFollowerComponent* PathFollower;
 
-	//카메라
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UCameraComponent* Camera; 
+	//움직이는 유닛 스텟
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ShowOnlyInnerProperties), Category = "Pawn Setting")
+	FMovePawn PawnState;
 
-	//최고속도
-	UPROPERTY(EditAnywhere, Category = "Flight")
-	float MaxSpeed = 5000.f;
+	//총알 발사 위치 배열
+	UPROPERTY()
+	TArray<USceneComponent*> FirePoints;
 
-	//가속도
-	UPROPERTY(EditAnywhere, Category = "Flight")
-	float Acceleration = 2000.f;
+	 //총알 클래스
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	TSubclassOf<ABulletBase> BulletBase;
+
 public:	
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void Initialize_GameManager_Pawn();
 
-private:
-	//플레이어 이동 관련
-	void Move_Pawn(float DeltaTime);
+	void Fire();
+
 };

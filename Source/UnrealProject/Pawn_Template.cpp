@@ -1,11 +1,12 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Pawn_Template.h"
 #include "Components/StaticMeshComponent.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "Camera/CameraComponent.h"
 #include "Components/SphereComponent.h"
+#include "PathFollowerComponent.h"
+#include "BulletBase.h"
+
+#include "DrawDebugHelpers.h"
 
 APawn_Template::APawn_Template()
 {
@@ -20,34 +21,15 @@ APawn_Template::APawn_Template()
     PlaneMesh->SetupAttachment(RootComponent);
     PlaneMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-    SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-    SpringArm->SetupAttachment(RootComponent);
-    SpringArm->TargetArmLength = 500.0f;
-    SpringArm->bEnableCameraLag = true;
-    SpringArm->CameraLagSpeed = 3.0f;
-
-    Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-    Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
-    Camera->bUsePawnControlRotation = false;
-}
-
-void APawn_Template::BeginPlay()
-{
-	Super::BeginPlay();
-	
+    PathFollower = CreateDefaultSubobject<UPathFollowerComponent>(TEXT("PathFollowerComp"));
+    PathFollower->SetPathSpeed(PawnState.move.MoveSpeed);
 }
 
 void APawn_Template::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-    Move_Pawn(DeltaTime);
-}
-
-void APawn_Template::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
+   
 }
 
 void APawn_Template::Initialize_GameManager_Pawn()
@@ -55,14 +37,53 @@ void APawn_Template::Initialize_GameManager_Pawn()
 
 }
 
-void APawn_Template::Move_Pawn(float DeltaTime)
+void APawn_Template::BeginPlay()
 {
-    if (GEngine) {
-        GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Cyan,
-            FString::Printf(TEXT("Current MaxSpeed: %f"), MaxSpeed));
+    Super::BeginPlay();
+
+    TArray<USceneComponent*> Components;
+    GetComponents<USceneComponent>(Components);
+
+    for (USceneComponent* Comp : Components)
+    {
+        if (Comp->GetName().Contains(TEXT("FirePos")))
+        {
+            FirePoints.Add(Comp);
+        }
     }
-    FVector ForwardMovement = GetActorForwardVector() * MaxSpeed * DeltaTime;
-	AddActorLocalOffset(ForwardMovement, true);
 }
+
+void APawn_Template::Fire()
+{
+    
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!PC || !BulletBase) return;
+
+    //마우스의 월드위치와 방향 가져오기
+    FVector MouseLocation, MouseDirection;
+    if (!PC->DeprojectMousePositionToWorld(MouseLocation, MouseDirection)) return;
+
+    FVector TargetPoint = MouseLocation + (MouseDirection * 10000.f);
+
+    for (USceneComponent* Point : FirePoints)
+    {
+        if (!Point) continue;
+
+        FVector SpawnLocation = Point->GetComponentLocation();
+
+        FVector LookAtDir = (TargetPoint - SpawnLocation).GetSafeNormal();
+        FRotator LookAtRotation = LookAtDir.Rotation();
+
+        Point->SetWorldRotation(LookAtRotation);
+
+        ABulletBase* NewBullet = GetWorld()->SpawnActor<ABulletBase>(BulletBase, SpawnLocation, LookAtRotation);
+
+        if (NewBullet)
+        {
+            NewBullet->InitBullet(LookAtDir);
+        }
+    }
+}
+
 
 

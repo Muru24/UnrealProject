@@ -5,11 +5,11 @@
 
 AGameManager::AGameManager()
 {
-	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("C:/Users/ldjin/Desktop/UnrealProject/Content/01_BluePrint/BP_Player.uasset"));
-	if (PlayerPawnBPClass.Class != nullptr)
-	{
-		DefaultPawnClass = PlayerPawnBPClass.Class;
-	}
+	//static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("C:/Users/ldjin/Desktop/UnrealProject/Content/01_BluePrint/BP_Player.uasset"));
+	//if (PlayerPawnBPClass.Class != nullptr)
+	//{
+	//	DefaultPawnClass = PlayerPawnBPClass.Class;
+	//}
 }
 
 void AGameManager::Tick(float DeltaTime)
