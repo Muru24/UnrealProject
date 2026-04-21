@@ -12,24 +12,23 @@ APawn_Template::APawn_Template()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-    CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
-    RootComponent = CollisionComponent;
-    CollisionComponent->SetSphereRadius(100.f);
-    CollisionComponent->SetCollisionProfileName(TEXT("Pawn"));
+	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
+	RootComponent = CollisionComponent;
+	CollisionComponent->SetSphereRadius(100.f);
+	CollisionComponent->SetCollisionProfileName(TEXT("Pawn"));
 
-    PlaneMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaneMesh"));
-    PlaneMesh->SetupAttachment(RootComponent);
-    PlaneMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	PlaneMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaneMesh"));
+	PlaneMesh->SetupAttachment(RootComponent);
+	PlaneMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-    PathFollower = CreateDefaultSubobject<UPathFollowerComponent>(TEXT("PathFollowerComp"));
-    PathFollower->SetPathSpeed(PawnState.move.MoveSpeed);
+	PathFollower = CreateDefaultSubobject<UPathFollowerComponent>(TEXT("PathFollowerComp"));
 }
 
 void APawn_Template::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-   
+
 }
 
 void APawn_Template::Initialize_GameManager_Pawn()
@@ -39,50 +38,54 @@ void APawn_Template::Initialize_GameManager_Pawn()
 
 void APawn_Template::BeginPlay()
 {
-    Super::BeginPlay();
+	Super::BeginPlay();
 
-    TArray<USceneComponent*> Components;
-    GetComponents<USceneComponent>(Components);
+	TArray<USceneComponent*> Components;
+	GetComponents<USceneComponent>(Components);
 
-    for (USceneComponent* Comp : Components)
-    {
-        if (Comp->GetName().Contains(TEXT("FirePos")))
-        {
-            FirePoints.Add(Comp);
-        }
-    }
+	for (USceneComponent* Comp : Components)
+	{
+		if (Comp->GetName().Contains(TEXT("FirePos")))
+		{
+			FirePoints.Add(Comp);
+		}
+	}
+
+	if (PathFollower)
+		PathFollower->SetPathSpeed(PawnState.move.MoveSpeed);
+
 }
 
 void APawn_Template::Fire()
 {
-    
-    APlayerController* PC = Cast<APlayerController>(GetController());
-    if (!PC || !BulletBase) return;
 
-    //마우스의 월드위치와 방향 가져오기
-    FVector MouseLocation, MouseDirection;
-    if (!PC->DeprojectMousePositionToWorld(MouseLocation, MouseDirection)) return;
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC || !BulletBase) return;
 
-    FVector TargetPoint = MouseLocation + (MouseDirection * 10000.f);
+	//마우스의 월드위치와 방향 가져오기
+	FVector MouseLocation, MouseDirection;
+	if (!PC->DeprojectMousePositionToWorld(MouseLocation, MouseDirection)) return;
 
-    for (USceneComponent* Point : FirePoints)
-    {
-        if (!Point) continue;
+	FVector TargetPoint = MouseLocation + (MouseDirection * 10000.f);
 
-        FVector SpawnLocation = Point->GetComponentLocation();
+	for (USceneComponent* Point : FirePoints)
+	{
+		if (!Point) continue;
 
-        FVector LookAtDir = (TargetPoint - SpawnLocation).GetSafeNormal();
-        FRotator LookAtRotation = LookAtDir.Rotation();
+		FVector SpawnLocation = Point->GetComponentLocation();
 
-        Point->SetWorldRotation(LookAtRotation);
+		FVector LookAtDir = (TargetPoint - SpawnLocation).GetSafeNormal();
+		FRotator LookAtRotation = LookAtDir.Rotation();
 
-        ABulletBase* NewBullet = GetWorld()->SpawnActor<ABulletBase>(BulletBase, SpawnLocation, LookAtRotation);
+		Point->SetWorldRotation(LookAtRotation);
 
-        if (NewBullet)
-        {
-            NewBullet->InitBullet(LookAtDir);
-        }
-    }
+		ABulletBase* NewBullet = GetWorld()->SpawnActor<ABulletBase>(BulletBase, SpawnLocation, LookAtRotation);
+
+		if (NewBullet)
+		{
+			NewBullet->InitBullet(LookAtDir);
+		}
+	}
 }
 
 
