@@ -23,15 +23,17 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-
-	//비행기 충돌 컴포넌트
+	//기본 유닛 필수 컴포넌트
+	// 충돌 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	 USphereComponent* CollisionComponent;
 
-	//비행기 외형 프리팹
+	//외형 프리팹
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	 UStaticMeshComponent* PlaneMesh; 
 
+
+	//그 이외의 컴포넌트
 	//경로 따라가는 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	 UPathFollowerComponent* PathFollower;
@@ -54,6 +56,7 @@ public:
 
 	void Initialize_GameManager_Pawn();
 
-	void Fire();
+
+	virtual void Fire();
 
 };

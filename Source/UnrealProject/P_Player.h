@@ -24,7 +24,13 @@ protected:
 	//카메라
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UCameraComponent* Camera;
+
+	//록온 기능
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class ULockOnComponent* LockOn;
 	
 	virtual void BeginPlay() override;
 	void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
+
+	virtual void Fire() override;
 };

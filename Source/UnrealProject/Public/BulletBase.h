@@ -6,35 +6,49 @@
 #include "GameFramework/Actor.h"
 #include "BulletBase.generated.h"
 
+class UProjectileMovementComponent;
 UCLASS()
 class UNREALPROJECT_API ABulletBase : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
 	ABulletBase();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	//날아갈 방향
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	FVector MoveDirection;
-
-	//총알 속도
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float BulletSpeed = 2000.0f;
 
 	//총알 삭제시간
 	UPROPERTY(EditAnywhere, Category = "Movement")
-	float LifeTime = 5.0f;
+	float LifeTime;
+
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float Speed;
+
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float MaxSpeed;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Bullet")
+	AActor* TargetActor;
+
+	UPROPERTY(VisibleAnywhere, Category = "Collision")
+	class UBoxComponent* CollisionComp;
 
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-	void InitBullet(FVector Direction);
-	void UpdateStraightMovement(float DeltaTime);
 	void HandleLifeTime(float DeltaTime);
+
+	void SetTarget(AActor* target) { TargetActor = target; }
+	AActor* GetTarget() { return TargetActor; }
+
+	float GetSpeed() { return Speed; }
+	float GetMaxSpeed() { return MaxSpeed; }
+
+	UFUNCTION()
+	void OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	virtual void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 };
