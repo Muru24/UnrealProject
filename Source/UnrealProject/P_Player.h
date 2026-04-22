@@ -28,6 +28,14 @@ protected:
 	//록온 기능
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class ULockOnComponent* LockOn;
+
+	//직선 및 유도총알 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UBulletWeaponComponent* BWeaponComp;
+
+	//라인 따라가기
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UPathFollowerComponent* PathFollower;
 	
 	virtual void BeginPlay() override;
 	void SetupPlayerInputComponent(UInputComponent* InputComponent) override;

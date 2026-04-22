@@ -4,9 +4,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "PathFollowerComponent.h"
-
-
-#include "DrawDebugHelpers.h"
+#include "StatComponent.h"
 
 APawn_Template::APawn_Template()
 {
@@ -20,8 +18,8 @@ APawn_Template::APawn_Template()
 	PlaneMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaneMesh"));
 	PlaneMesh->SetupAttachment(RootComponent);
 	PlaneMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	PathFollower = CreateDefaultSubobject<UPathFollowerComponent>(TEXT("PathFollowerComp"));
+	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
+	
 }
 
 void APawn_Template::Tick(float DeltaTime)
@@ -30,35 +28,11 @@ void APawn_Template::Tick(float DeltaTime)
 
 }
 
-void APawn_Template::Initialize_GameManager_Pawn()
-{
-
-}
-
 void APawn_Template::BeginPlay()
 {
 	Super::BeginPlay();
-
-	TArray<USceneComponent*> Components;
-	GetComponents<USceneComponent>(Components);
-
-	for (USceneComponent* Comp : Components)
-	{
-		if (Comp->GetName().Contains(TEXT("FirePos")))
-		{
-			FirePoints.Add(Comp);
-		}
-	}
-
-	if (PathFollower)
-		PathFollower->SetPathSpeed(PawnState.move.MoveSpeed);
-
 }
 
-void APawn_Template::Fire()
-{
-
-}
 
 
 

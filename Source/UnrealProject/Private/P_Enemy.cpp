@@ -3,6 +3,12 @@
 
 #include "P_Enemy.h"
 #include "EnemyManager.h"
+#include "UnrealProject/PathFollowerComponent.h"
+
+AP_Enemy::AP_Enemy()
+{
+    PathFollower = CreateDefaultSubobject<UPathFollowerComponent>(TEXT("PathFollowerComp"));
+}
 
 void AP_Enemy::BeginPlay()
 {

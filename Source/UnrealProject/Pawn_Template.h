@@ -7,7 +7,6 @@
 #include "PawnStruct.h"
 #include "Pawn_Template.generated.h"
 
-class ABulletBase;
 class USphereComponent;
 class UStaticMeshComponent;
 class UPathFollowerComponent;
@@ -32,31 +31,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	 UStaticMeshComponent* PlaneMesh; 
 
-
-	//그 이외의 컴포넌트
-	//경로 따라가는 컴포넌트
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	 UPathFollowerComponent* PathFollower;
-
 	//움직이는 유닛 스텟
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ShowOnlyInnerProperties), Category = "Pawn Setting")
-	FMovePawn PawnState;
+	 UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	 class UStatComponent* StatComponent;
 
-	//총알 발사 위치 배열
-	UPROPERTY()
-	TArray<USceneComponent*> FirePoints;
-
-	 //총알 클래스
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	TSubclassOf<ABulletBase> BulletBase;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
 
-
-	void Initialize_GameManager_Pawn();
-
-
-	virtual void Fire();
-
+	virtual void Fire() {};
 };

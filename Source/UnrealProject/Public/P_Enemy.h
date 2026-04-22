@@ -15,5 +15,11 @@ class UNREALPROJECT_API AP_Enemy : public APawn_Template
 	GENERATED_BODY()
 	
 public:
+	AP_Enemy();
 	virtual void BeginPlay() override;
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UPathFollowerComponent* PathFollower;
+
 };

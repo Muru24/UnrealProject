@@ -18,6 +18,7 @@ public:
 
     void SetTargetPath(AActor* InPathActor) { TargetPathActor = InPathActor; }
     void SetPathSpeed(float Speed) { MoveSpeed = Speed; }
+    virtual void BeginPlay() override;
 protected:
     //지정할 경로
     UPROPERTY(EditAnywhere, Category = "Movement")

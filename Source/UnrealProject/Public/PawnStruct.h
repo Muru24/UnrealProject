@@ -28,6 +28,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float HP;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MaxHP;
 };
 
 USTRUCT(BlueprintType)

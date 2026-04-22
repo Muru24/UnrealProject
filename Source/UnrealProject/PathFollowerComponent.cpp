@@ -3,6 +3,7 @@
 
 #include "PathFollowerComponent.h"
 #include "Components/SplineComponent.h"
+#include "StatComponent.h"
 
 UPathFollowerComponent::UPathFollowerComponent()
 {
@@ -30,6 +31,13 @@ void UPathFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
             GetOwner()->SetActorLocationAndRotation(NewLoc, NewRot);
         }
     }
+}
+
+void UPathFollowerComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    MoveSpeed = GetOwner()->FindComponentByClass<UStatComponent>()->GetMoveSpeed();
 }
 
 

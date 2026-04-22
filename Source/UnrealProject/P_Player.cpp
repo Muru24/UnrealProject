@@ -6,6 +6,8 @@
 #include "Camera/CameraComponent.h"
 #include "LockOnComponent.h"
 #include "BulletBase.h"
+#include "BulletWeaponComponent.h"
+#include "PathFollowerComponent.h"
 
 AP_Player::AP_Player()
 {
@@ -20,6 +22,10 @@ AP_Player::AP_Player()
     Camera->bUsePawnControlRotation = false;
 
     LockOn = CreateDefaultSubobject<ULockOnComponent>(TEXT("LockOn"));
+
+    BWeaponComp = CreateDefaultSubobject<UBulletWeaponComponent>(TEXT("B_Weapon"));
+
+    PathFollower = CreateDefaultSubobject<UPathFollowerComponent>(TEXT("PathFollowerComp"));
 }
 
 void AP_Player::BeginPlay()
@@ -30,6 +36,7 @@ void AP_Player::BeginPlay()
         PC->bShowMouseCursor = true; 
         PC->SetInputMode(FInputModeGameAndUI());
     }
+
     APawn_Template::BeginPlay();
 }
 
@@ -46,74 +53,49 @@ void AP_Player::Fire()
 {
 
     APlayerController* PC = Cast<APlayerController>(GetController());
-    if (!PC || !BulletBase || !LockOn) return;
+    if (!PC || !BWeaponComp || !LockOn) return;
 
-    FVector MouseLocation, MouseDirection;
     FVector TargetPoint;
+    AActor* CurrentTarget = nullptr;
 
-    // 디버그용 변수들
-    FHitResult HitResult;
-    bool bHit = false;
-
-    if (!LockOn->isLockOn)
+    if (LockOn->isLockOn && LockOn->target)
     {
-        if (!PC->DeprojectMousePositionToWorld(MouseLocation, MouseDirection)) return;
-
-        FVector Start = MouseLocation;
-        FVector End = Start + (MouseDirection * 10000.f);
-
-        FCollisionQueryParams Params;
-        Params.AddIgnoredActor(this); 
-
-        bHit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params);
-
-        if (bHit)
-        {
-            TargetPoint = HitResult.Location;
-
-            // --- 디버그 드로우 추가 ---
-            // 충돌 지점에 구체 그리기
-            DrawDebugSphere(GetWorld(), HitResult.Location, 20.f, 12, FColor::Red, false, 2.0f);
-            // 충돌한 액터 이름 표시
-            if (HitResult.GetActor())
-            {
-                FString ActorName = HitResult.GetActor()->GetName();
-                DrawDebugString(GetWorld(), HitResult.Location + FVector(0, 0, 50), ActorName, nullptr, FColor::White, 2.0f);
-            }
-        }
-        else
-        {
-            TargetPoint = End;
-        }
+        TargetPoint = LockOn->target->GetActorLocation();
+        CurrentTarget = LockOn->target;
     }
     else
     {
-        if (LockOn->target)
+        FVector MouseLocation, MouseDirection;
+        if (PC->DeprojectMousePositionToWorld(MouseLocation, MouseDirection))
         {
-            TargetPoint = LockOn->target->GetActorLocation();
-        }
-        else return;
-    }
+            FVector Start = MouseLocation;
+            FVector End = Start + (MouseDirection * 10000.f);
 
-    for (USceneComponent* Point : FirePoints)
-    {
-        if (!Point) continue;
+            FHitResult HitResult;
+            FCollisionQueryParams Params;
+            Params.AddIgnoredActor(this);
 
-        FVector SpawnLocation = Point->GetComponentLocation();
-        FVector LookAtDir = (TargetPoint - SpawnLocation).GetSafeNormal();
-        FRotator LookAtRotation = LookAtDir.Rotation();
+            bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params);
 
-        Point->SetWorldRotation(LookAtRotation);
-
-        ABulletBase* NewBullet = GetWorld()->SpawnActor<ABulletBase>(BulletBase, SpawnLocation, LookAtRotation);        
-        if (NewBullet)
-        {
-            if (LockOn->isLockOn && LockOn->target)
+            if (bHit)
             {
-                NewBullet->SetTarget(LockOn->target);
+                TargetPoint = HitResult.Location;
+
+                // 디버그 드로우 
+                DrawDebugSphere(GetWorld(), HitResult.Location, 20.f, 12, FColor::Red, false, 2.0f);
+                if (HitResult.GetActor())
+                {
+                    DrawDebugString(GetWorld(), HitResult.Location + FVector(0, 0, 50), HitResult.GetActor()->GetName(), nullptr, FColor::White, 2.0f);
+                }
+            }
+            else
+            {
+                TargetPoint = End;
             }
         }
     }
+
+    BWeaponComp->Fire(TargetPoint, CurrentTarget);
 }
 
 
