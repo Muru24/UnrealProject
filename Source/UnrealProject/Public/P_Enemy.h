@@ -14,4 +14,6 @@ class UNREALPROJECT_API AP_Enemy : public APawn_Template
 {
 	GENERATED_BODY()
 	
+public:
+	virtual void BeginPlay() override;
 };

@@ -2,11 +2,22 @@
 
 
 #include "BulletBase.h"
+#include "Components/BoxComponent.h"
+#include "Components/PrimitiveComponent.h"
 
 ABulletBase::ABulletBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+    CollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
+    RootComponent = CollisionComp;
+
+    CollisionComp->InitBoxExtent(FVector(10.0f, 5.0f, 5.0f));
+
+    CollisionComp->SetCollisionProfileName(TEXT("Projectile"));
+
+    CollisionComp->OnComponentHit.AddDynamic(this, &ABulletBase::OnHit);
+    CollisionComp->OnComponentBeginOverlap.AddDynamic(this, &ABulletBase::OnOverlap);
 }
 
 void ABulletBase::BeginPlay()
@@ -18,42 +29,8 @@ void ABulletBase::BeginPlay()
 void ABulletBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-    UpdateStraightMovement(DeltaTime);
     HandleLifeTime(DeltaTime);
 
-}
-
-void ABulletBase::UpdateStraightMovement(float DeltaTime)
-{
-    FVector CurrentLocation = GetActorLocation();
-    FVector NextLocation = CurrentLocation + (MoveDirection * BulletSpeed * DeltaTime);
-
-    FHitResult HitResult;
-    FCollisionQueryParams Params;
-    Params.AddIgnoredActor(this);
-    Params.AddIgnoredActor(GetOwner());
-
-    bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, CurrentLocation, NextLocation, ECC_Visibility, Params);
-
-    if (bHit)
-    {
-        AActor* HitActor = HitResult.GetActor();
-        FString ActorName = HitActor ? HitActor->GetName() : TEXT("None");
-
-        UE_LOG(LogTemp, Warning, TEXT("Bullet Hit: %s"), *ActorName);
-
-        if (GEngine)
-        {
-            GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Yellow, FString::Printf(TEXT("Hit: %s"), *ActorName));
-        }
-
-        SetActorLocation(HitResult.Location);
-        Destroy();
-    }
-    else
-    {
-        SetActorLocation(NextLocation);
-    }
 }
 
 void ABulletBase::HandleLifeTime(float DeltaTime)
@@ -65,8 +42,22 @@ void ABulletBase::HandleLifeTime(float DeltaTime)
     }
 }
 
-void ABulletBase::InitBullet(FVector Direction)
+void ABulletBase::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	MoveDirection = Direction.GetSafeNormal();
+    if (OtherActor && (OtherActor != this))
+    {
+        SetActorLocation(SweepResult.Location);
+        Destroy();
+    }
 }
+
+void ABulletBase::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+    if (OtherActor && OtherActor != this)
+    {
+        SetActorLocation(Hit.Location);
+        Destroy();
+    }
+}
+
 
