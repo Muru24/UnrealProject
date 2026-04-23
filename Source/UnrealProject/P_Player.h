@@ -36,9 +36,23 @@ protected:
 	//라인 따라가기
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UPathFollowerComponent* PathFollower;
+
+	//카메라 최대 오프셋
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float MaxCameraOffset = 300.0f; 
+
+	//카메라 스피드
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float CameraMoveSpeed = 5.0f;
+
+	//중앙 카메라 흔들림 무시
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float MouseDeadZone = 0.15f;    
 	
 	virtual void BeginPlay() override;
 	void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 
 	virtual void Fire() override;
+	virtual void Tick(float DeltaTime) override;
+	void UpdateCameraPan(float DeltaTime);
 };

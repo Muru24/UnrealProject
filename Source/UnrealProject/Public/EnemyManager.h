@@ -14,10 +14,10 @@ class UNREALPROJECT_API UEnemyManager : public UWorldSubsystem
 public:
 	UEnemyManager();
 
-	//¸ó½ºÅÍ Ãß°¡
+	//ëª¬ìŠ¤í„° ì¶”ê°€
 	void AddEnemy(APawn* enemy);
 
-	//¸ó½ºÅÍ ¹è¿­ ¹ÝÈ¯
+	//ëª¬ìŠ¤í„° ë°°ì—´ ë°˜í™˜
 	TArray<APawn*> GetEnemys() const { return EnemyArr; }
 protected:
 	UFUNCTION()

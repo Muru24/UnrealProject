@@ -20,29 +20,41 @@ public:
     virtual void BeginPlay() override;
 
 protected:
-    //ÁöÁ¤ÇÒ °æ·Î
+    //ì§€ì •í•  ê²½ë¡œ
     UPROPERTY(EditAnywhere, Category = "Movement")
     AActor* TargetPathActor;
 
-    //ÀÌµ¿¼Óµµ
+    //ì´ë™ì†ë„
     UPROPERTY(VisibleAnywhere, Category = "Movement")
     float MoveSpeed = 0;
 
-    //¼Óµµ º¸°£ ¼öÄ¡
+    //ì†ë„ ë³´ê°„ ìˆ˜ì¹˜
     UPROPERTY(VisibleAnywhere, Category = "Movement")
     float LocationInterpSpeed = 15.0f;
 
-    //ÇöÀç °æ·Î À§Ä¡
-    UPROPERTY(EditAnywhere, Category = "Movement")
-    float CurrentDistance = 0.0f;
-
-    //¹ğÅ· °­µµ
+    //ì¢Œìš° ë±…í‚¹ ê°•ë„
     UPROPERTY(EditAnywhere, Category = "Movement")
     float BankingIntensity = 1.5f;
 
-    //È¸Àü ¼Óµµ
+    //íšŒì „ ì†ë„
     UPROPERTY(EditAnywhere, Category = "Movement")
     float RotationInterpSpeed = 3.0f;
 
+    //ë±…í‚¹ ë¶€ë“œëŸ¬ì›€
+    UPROPERTY(EditAnywhere, Category = "Movement|Banking")
+    float BankingInterpSpeed = 2.0f; 
 
+    //ìƒí•˜ ë±…í‚¹
+    UPROPERTY(EditAnywhere, Category = "Movement|Banking")
+    float PitchExaggeration = 1.2f; 
+
+    //ì‹œì‘ ìœ„ì¹˜
+    UPROPERTY(EditAnywhere, Category = "Movement|Banking")
+    float CurrentDistance = 0.0f;
+
+    // íƒ€ê²Ÿ Yaw ë³€í™”ëŸ‰ (ë±…í‚¹ ê³„ì‚°ìš©)
+    float InterpolatedYawDelta = 0.0f; 
+
+    // í˜„ì¬ Roll ê°’ (ë¶€ë“œëŸ¬ìš´ ë±…í‚¹ìš©)
+    float CurrentRoll = 0.0f;
 };

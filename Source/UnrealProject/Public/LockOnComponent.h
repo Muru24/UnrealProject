@@ -17,10 +17,10 @@ class UNREALPROJECT_API ULockOnComponent : public UActorComponent
 public:	
 	ULockOnComponent();
 
-	//·Ï¿Â Å¸°Ù Ã£´Â ÇÔ¼ö
+	//ë¡ì˜¨ íƒ€ê²Ÿ ì°¾ëŠ” í•¨ìˆ˜
 	void TraceTarget();
 
-	//Å¸°Ù º¯°æ ÇÔ¼ö
+	//íƒ€ê²Ÿ ë³€ê²½ í•¨ìˆ˜
 	void ChangeTarget();
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -28,18 +28,18 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	//·Ï ¿Â ¿©ºÎ
+	//ë¡ ì˜¨ ì—¬ë¶€
 	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category ="LockOn")
 	bool isLockOn = false;
 	
-	//ÇöÀç Å¸°Ù
+	//í˜„ì¬ íƒ€ê²Ÿ
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "LockOn")
 	APawn* target;
 
-	//ÇöÀç Å¸°Ù
+	//í˜„ì¬ íƒ€ê²Ÿ
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "LockOn")
 	int32 targetIndex;
 
-	//¸ó½ºÅÍµéÀÇ Á¤º¸¸¦ ´ã°íÀÖ´Â ¸Å´ÏÀú ÂüÁ¶
+	//ëª¬ìŠ¤í„°ë“¤ì˜ ì •ë³´ë¥¼ ë‹´ê³ ìˆëŠ” ë§¤ë‹ˆì € ì°¸ì¡°
 	UEnemyManager* EnemyManager;
 };

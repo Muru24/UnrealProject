@@ -98,4 +98,36 @@ void AP_Player::Fire()
     BWeaponComp->Fire(TargetPoint, CurrentTarget);
 }
 
+void AP_Player::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+   UpdateCameraPan(DeltaTime);
+}
+
+void AP_Player::UpdateCameraPan(float DeltaTime)
+{
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!PC || !SpringArm) return;
+
+    int32 ViewportSizeX, ViewportSizeY;
+    PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
+
+    float MouseX, MouseY;
+    if (PC->GetMousePosition(MouseX, MouseY))
+    {
+        float RangeX = (MouseX / (ViewportSizeX * 0.5f)) - 1.0f;
+        float RangeY = (MouseY / (ViewportSizeY * 0.5f)) - 1.0f;
+
+        if (FMath::Abs(RangeX) < MouseDeadZone) RangeX = 0.0f;
+
+        if (RangeY > 0.0f) RangeY = 0.0f;
+
+        float MaxRotationAngle = 12.0f;
+
+        FRotator TargetRotation = FRotator(-RangeY * MaxRotationAngle, RangeX * MaxRotationAngle, 0.0f);
+
+        SpringArm->SetRelativeRotation(FMath::RInterpTo(SpringArm->GetRelativeRotation(), TargetRotation, DeltaTime, CameraMoveSpeed));
+    }
+}
+
 

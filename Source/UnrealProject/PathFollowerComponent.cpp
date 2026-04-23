@@ -8,52 +8,79 @@
 UPathFollowerComponent::UPathFollowerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-
-}
-
-
-void UPathFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-    if (!TargetPathActor) return;
-
-    USplineComponent* Spline = TargetPathActor->FindComponentByClass<USplineComponent>();
-    if (Spline)
-    {
-        // 1. °Å¸® ÀÌµ¿ °è»ê
-        CurrentDistance += MoveSpeed * DeltaTime;
-        float TotalLength = Spline->GetSplineLength();
-        if (CurrentDistance > TotalLength) CurrentDistance = 0.0f;
-
-        // 2. ¸ñÇ¥ µ¥ÀÌÅÍ °¡Á®¿À±â (World Space)
-        FVector TargetLoc = Spline->GetLocationAtDistanceAlongSpline(CurrentDistance, ESplineCoordinateSpace::World);
-        FRotator TargetRot = Spline->GetRotationAtDistanceAlongSpline(CurrentDistance, ESplineCoordinateSpace::World);
-
-        // 3. À§Ä¡ º¸°£ (VInterp To)
-        FVector CurrentLoc = GetOwner()->GetActorLocation();
-        FVector SmoothedLoc = FMath::VInterpTo(CurrentLoc, TargetLoc, DeltaTime, LocationInterpSpeed);
-
-        // 4. È¸Àü º¸°£ ¹× ¹ğÅ·(Banking) °è»ê
-        FRotator CurrentRot = GetOwner()->GetActorRotation();
-
-        float YawDelta = FMath::FindDeltaAngleDegrees(CurrentRot.Yaw, TargetRot.Yaw);
-
-        // ¹ğÅ· °­µµ Á¶Àı
-        TargetRot.Roll = FMath::Clamp(YawDelta * BankingIntensity, -45.0f, 45.0f); // ÃÖ´ë 45µµ Á¦ÇÑ
-
-        FRotator SmoothedRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, RotationInterpSpeed);
-
-        GetOwner()->SetActorLocationAndRotation(SmoothedLoc, SmoothedRot);
-    }
 }
 
 void UPathFollowerComponent::BeginPlay()
 {
-    Super::BeginPlay();
+	Super::BeginPlay();
 
-    MoveSpeed = GetOwner()->FindComponentByClass<UStatComponent>()->GetMoveSpeed();
+	MoveSpeed = GetOwner()->FindComponentByClass<UStatComponent>()->GetMoveSpeed();
 }
 
+void UPathFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	if (!TargetPathActor) return;
+	USplineComponent* Spline = TargetPathActor->FindComponentByClass<USplineComponent>();
+	if (!Spline) return;
 
+	float TotalLength = Spline->GetSplineLength();
+	CurrentDistance += MoveSpeed * DeltaTime;
+
+	// 1. ë£¨í•‘(Looping) ë° ê±°ë¦¬ ì²˜ë¦¬ ê°œì„ 
+	if (Spline->IsClosedLoop())
+	{
+		CurrentDistance = FMath::Fmod(CurrentDistance, TotalLength);
+	}
+	else if (CurrentDistance > TotalLength)
+	{
+		CurrentDistance = 0.0f; // ë£¨í”„ê°€ ì•„ë‹ ê²½ìš° ì²˜ìŒìœ¼ë¡œ ë¦¬ì…‹
+	}
+
+	// 2. Look-ahead ê±°ë¦¬ ê³„ì‚° (ë£¨í•‘ ê³ ë ¤)
+	float LookAheadOffset = 200.0f;
+	float LookAheadDistance = CurrentDistance + LookAheadOffset;
+	if (Spline->IsClosedLoop())
+	{
+		LookAheadDistance = FMath::Fmod(LookAheadDistance, TotalLength);
+	}
+	else
+	{
+		LookAheadDistance = FMath::Clamp(LookAheadDistance, 0.0f, TotalLength);
+	}
+
+	FVector TargetLoc = Spline->GetLocationAtDistanceAlongSpline(CurrentDistance, ESplineCoordinateSpace::World);
+	FRotator LookAheadRot = Spline->GetRotationAtDistanceAlongSpline(LookAheadDistance, ESplineCoordinateSpace::World);
+
+	// Pitch ê°•ì¡° (í•˜ê°• ì‹œ ë” ê°€íŒŒë¥´ê²Œ)
+	if (LookAheadRot.Pitch < -5.0f)
+	{
+		LookAheadRot.Pitch *= PitchExaggeration;
+	}
+
+	FRotator CurrentRot = GetOwner()->GetActorRotation();
+
+	// 3. ë±…í‚¹(Banking) ë¡œì§ ê°œì„  (ì •ì  ë³€ìˆ˜ ì œê±° ë° ë³´ê°„ ê°•í™”)
+	float TargetYawDelta = FMath::FindDeltaAngleDegrees(CurrentRot.Yaw, LookAheadRot.Yaw);
+	
+	// Yaw ë³€í™”ëŸ‰ì„ ë¶€ë“œëŸ½ê²Œ ì¶”ì 
+	InterpolatedYawDelta = FMath::FInterpTo(InterpolatedYawDelta, TargetYawDelta, DeltaTime, BankingInterpSpeed);
+	
+	// íƒ€ê²Ÿ ë¡¤ ê³„ì‚° ë° ë¶€ë“œëŸ¬ìš´ ì ìš©
+	float TargetRoll = FMath::Clamp(InterpolatedYawDelta * BankingIntensity, -60.0f, 60.0f);
+	CurrentRoll = FMath::FInterpTo(CurrentRoll, TargetRoll, DeltaTime, BankingInterpSpeed);
+	LookAheadRot.Roll = CurrentRoll;
+
+	// 4. íšŒì „ ë³´ê°„ (ì¿¼í„°ë‹ˆì–¸ Slerpë¥¼ ì‚¬ìš©í•˜ì—¬ ì§ë²Œ ë½ ë°©ì§€ ë° ë¶€ë“œëŸ¬ì›€ í™•ë³´)
+	FQuat CurrentQuat = FQuat(CurrentRot);
+	FQuat TargetQuat = FQuat(LookAheadRot);
+	FQuat FinalQuat = FMath::QInterpTo(CurrentQuat, TargetQuat, DeltaTime, RotationInterpSpeed);
+	FRotator FinalRot = FinalQuat.Rotator();
+
+	// 5. ìœ„ì¹˜ ë³´ê°„
+	FVector CurrentLoc = GetOwner()->GetActorLocation();
+	FVector FinalLoc = FMath::VInterpTo(CurrentLoc, TargetLoc, DeltaTime, LocationInterpSpeed);
+
+	GetOwner()->SetActorLocationAndRotation(FinalLoc, FinalRot);
+}
