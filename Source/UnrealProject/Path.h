@@ -15,7 +15,7 @@ class UNREALPROJECT_API APath : public AActor
 public:	
 	APath();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USplineComponent* SplineComponent;
 
 protected:

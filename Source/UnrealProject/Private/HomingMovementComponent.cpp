@@ -3,6 +3,7 @@
 
 #include "HomingMovementComponent.h"
 #include "BulletBase.h"
+#include "UObject/UObjectGlobals.h"
 
 UHomingMovementComponent::UHomingMovementComponent()
 {
@@ -26,6 +27,12 @@ void UHomingMovementComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
     if (!BulletOwner || BulletOwner->IsPendingKill()) return;
 
     AActor* CurrentTarget = BulletOwner->GetTarget();
+
+    if (CurrentTarget && !IsValid(CurrentTarget))
+    {
+        BulletOwner->SetTarget(nullptr);
+        CurrentTarget = nullptr;
+    }
 
     if (CurrentTarget)
     {

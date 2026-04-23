@@ -1,0 +1,4 @@
+version: 1
+display_name: "UE5 Spline Chase Shooter"
+short_description: "UE5 spline shooter rules"
+default_prompt: "Use this skill when working on the UE5 spline-based chase shooter project and follow its composition-first engineering rules."

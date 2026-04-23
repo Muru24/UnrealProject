@@ -17,6 +17,9 @@ public:
 
     void SetTargetPath(AActor* InPathActor) { TargetPathActor = InPathActor; }
     void SetPathSpeed(float Speed) { MoveSpeed = Speed; }
+    void SetApplyOwnerTransform(bool bInApplyOwnerTransform) { bApplyOwnerTransform = bInApplyOwnerTransform; }
+    bool HasValidBaseTransform() const { return bHasValidBaseTransform; }
+    const FTransform& GetBaseWorldTransform() const { return BaseWorldTransform; }
     virtual void BeginPlay() override;
 
 protected:
@@ -57,4 +60,12 @@ protected:
 
     // 현재 Roll 값 (부드러운 뱅킹용)
     float CurrentRoll = 0.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Movement")
+    bool bApplyOwnerTransform = true;
+
+    UPROPERTY(VisibleAnywhere, Category = "Movement")
+    FTransform BaseWorldTransform;
+
+    bool bHasValidBaseTransform = false;
 };

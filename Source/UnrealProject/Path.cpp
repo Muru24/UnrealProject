@@ -23,6 +23,4 @@ void APath::BeginPlay()
 void APath::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
-

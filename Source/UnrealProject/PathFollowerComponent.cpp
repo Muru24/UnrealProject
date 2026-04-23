@@ -3,6 +3,8 @@
 
 #include "PathFollowerComponent.h"
 #include "Components/SplineComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Path.h"
 #include "StatComponent.h"
 
 UPathFollowerComponent::UPathFollowerComponent()
@@ -14,7 +16,15 @@ void UPathFollowerComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	MoveSpeed = GetOwner()->FindComponentByClass<UStatComponent>()->GetMoveSpeed();
+	if (UStatComponent* OwnerStatComponent = GetOwner()->FindComponentByClass<UStatComponent>())
+	{
+		MoveSpeed = OwnerStatComponent->GetMoveSpeed();
+	}
+
+	if (!TargetPathActor)
+	{
+		TargetPathActor = UGameplayStatics::GetActorOfClass(GetWorld(), APath::StaticClass());
+	}
 }
 
 void UPathFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -82,5 +92,11 @@ void UPathFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	FVector CurrentLoc = GetOwner()->GetActorLocation();
 	FVector FinalLoc = FMath::VInterpTo(CurrentLoc, TargetLoc, DeltaTime, LocationInterpSpeed);
 
-	GetOwner()->SetActorLocationAndRotation(FinalLoc, FinalRot);
+	BaseWorldTransform = FTransform(FinalRot, FinalLoc);
+	bHasValidBaseTransform = true;
+
+	if (bApplyOwnerTransform)
+	{
+		GetOwner()->SetActorLocationAndRotation(FinalLoc, FinalRot);
+	}
 }

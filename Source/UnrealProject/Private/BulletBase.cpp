@@ -4,6 +4,7 @@
 #include "BulletBase.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
+#include "StatComponent.h"
 
 ABulletBase::ABulletBase()
 {
@@ -44,20 +45,28 @@ void ABulletBase::HandleLifeTime(float DeltaTime)
 
 void ABulletBase::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (OtherActor && (OtherActor != this))
-    {
-        SetActorLocation(SweepResult.Location);
-        Destroy();
-    }
+    ProcessImpact(OtherActor, SweepResult.Location);
 }
 
 void ABulletBase::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-    if (OtherActor && OtherActor != this)
+    ProcessImpact(OtherActor, Hit.Location);
+}
+
+void ABulletBase::ProcessImpact(AActor* OtherActor, const FVector& ImpactLocation)
+{
+    if (!OtherActor || OtherActor == this || OtherActor == GetOwner() || OtherActor->IsA<ABulletBase>())
     {
-        SetActorLocation(Hit.Location);
-        Destroy();
+        return;
     }
+
+    if (UStatComponent* TargetStatComponent = OtherActor->FindComponentByClass<UStatComponent>())
+    {
+        TargetStatComponent->ApplyDamage(Damage);
+    }
+
+    SetActorLocation(ImpactLocation);
+    Destroy();
 }
 
 

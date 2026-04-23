@@ -18,7 +18,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	//√—æÀ ªË¡¶Ω√∞£
+	//Ï¥ùÏïå ÏÇ≠Ï†úÏãúÍ∞Ñ
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float LifeTime;
 
@@ -27,6 +27,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float MaxSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	float Damage = 1.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Bullet")
 	AActor* TargetActor;
@@ -37,6 +40,7 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 	void HandleLifeTime(float DeltaTime);
+	void ProcessImpact(AActor* OtherActor, const FVector& ImpactLocation);
 
 	void SetTarget(AActor* target) { TargetActor = target; }
 	AActor* GetTarget() { return TargetActor; }
