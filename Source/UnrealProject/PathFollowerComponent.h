@@ -6,7 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "PathFollowerComponent.generated.h"
 
-
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class UNREALPROJECT_API UPathFollowerComponent : public UActorComponent
 {
@@ -19,6 +18,7 @@ public:
     void SetTargetPath(AActor* InPathActor) { TargetPathActor = InPathActor; }
     void SetPathSpeed(float Speed) { MoveSpeed = Speed; }
     virtual void BeginPlay() override;
+
 protected:
     //지정할 경로
     UPROPERTY(EditAnywhere, Category = "Movement")
@@ -28,7 +28,21 @@ protected:
     UPROPERTY(VisibleAnywhere, Category = "Movement")
     float MoveSpeed = 0;
 
+    //속도 보간 수치
+    UPROPERTY(VisibleAnywhere, Category = "Movement")
+    float LocationInterpSpeed = 15.0f;
+
     //현재 경로 위치
     UPROPERTY(EditAnywhere, Category = "Movement")
     float CurrentDistance = 0.0f;
+
+    //뱅킹 강도
+    UPROPERTY(EditAnywhere, Category = "Movement")
+    float BankingIntensity = 1.5f;
+
+    //회전 속도
+    UPROPERTY(EditAnywhere, Category = "Movement")
+    float RotationInterpSpeed = 3.0f;
+
+
 };

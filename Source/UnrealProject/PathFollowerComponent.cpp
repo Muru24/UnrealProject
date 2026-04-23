@@ -16,20 +16,35 @@ void UPathFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    if (TargetPathActor)
+    if (!TargetPathActor) return;
+
+    USplineComponent* Spline = TargetPathActor->FindComponentByClass<USplineComponent>();
+    if (Spline)
     {
-        USplineComponent* Spline = TargetPathActor->FindComponentByClass<USplineComponent>();
-        if (Spline)
-        {
-            CurrentDistance += MoveSpeed * DeltaTime;
-            float TotalLength = Spline->GetSplineLength();
-            if (CurrentDistance > TotalLength) CurrentDistance = 0.0f;
+        // 1. 거리 이동 계산
+        CurrentDistance += MoveSpeed * DeltaTime;
+        float TotalLength = Spline->GetSplineLength();
+        if (CurrentDistance > TotalLength) CurrentDistance = 0.0f;
 
-            FVector NewLoc = Spline->GetLocationAtDistanceAlongSpline(CurrentDistance, ESplineCoordinateSpace::World);
-            FRotator NewRot = Spline->GetRotationAtDistanceAlongSpline(CurrentDistance, ESplineCoordinateSpace::World);
+        // 2. 목표 데이터 가져오기 (World Space)
+        FVector TargetLoc = Spline->GetLocationAtDistanceAlongSpline(CurrentDistance, ESplineCoordinateSpace::World);
+        FRotator TargetRot = Spline->GetRotationAtDistanceAlongSpline(CurrentDistance, ESplineCoordinateSpace::World);
 
-            GetOwner()->SetActorLocationAndRotation(NewLoc, NewRot);
-        }
+        // 3. 위치 보간 (VInterp To)
+        FVector CurrentLoc = GetOwner()->GetActorLocation();
+        FVector SmoothedLoc = FMath::VInterpTo(CurrentLoc, TargetLoc, DeltaTime, LocationInterpSpeed);
+
+        // 4. 회전 보간 및 뱅킹(Banking) 계산
+        FRotator CurrentRot = GetOwner()->GetActorRotation();
+
+        float YawDelta = FMath::FindDeltaAngleDegrees(CurrentRot.Yaw, TargetRot.Yaw);
+
+        // 뱅킹 강도 조절
+        TargetRot.Roll = FMath::Clamp(YawDelta * BankingIntensity, -45.0f, 45.0f); // 최대 45도 제한
+
+        FRotator SmoothedRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, RotationInterpSpeed);
+
+        GetOwner()->SetActorLocationAndRotation(SmoothedLoc, SmoothedRot);
     }
 }
 
