@@ -55,17 +55,17 @@ void ABulletBase::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 
 void ABulletBase::ProcessImpact(AActor* OtherActor, const FVector& ImpactLocation)
 {
-    if (!OtherActor || OtherActor == this || OtherActor == GetOwner() || OtherActor->IsA<ABulletBase>())
-    {
-        return;
-    }
+    //if (!OtherActor || OtherActor == this || OtherActor == GetOwner() || OtherActor->IsA<ABulletBase>())
+    //{
+    //    return;
+    //}
 
-    if (UStatComponent* TargetStatComponent = OtherActor->FindComponentByClass<UStatComponent>())
-    {
-        TargetStatComponent->ApplyDamage(Damage);
-    }
+    //if (UStatComponent* TargetStatComponent = OtherActor->FindComponentByClass<UStatComponent>())
+    //{
+    //    TargetStatComponent->ApplyDamage(Damage);
+    //}
 
-    SetActorLocation(ImpactLocation);
+    //SetActorLocation(ImpactLocation);
     Destroy();
 }
 
