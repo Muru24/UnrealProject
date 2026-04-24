@@ -61,6 +61,8 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 
+	void Accelerator();
+
 	virtual void Fire() override;
 	virtual void Tick(float DeltaTime) override;
 	void MoveHorizontal(float Value);

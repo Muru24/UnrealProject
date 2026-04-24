@@ -9,6 +9,7 @@
 #include "PathFollowerComponent.h"
 #include "RailOffsetComponent.h"
 #include "SquadCraftActor.h"
+#include "StatComponent.h"
 
 AP_Player::AP_Player()
 {
@@ -70,8 +71,15 @@ void AP_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction(TEXT("TargetChange"), IE_Pressed, LockOn, &ULockOnComponent::ChangeTarget);
 	PlayerInputComponent->BindAction(TEXT("SwapLeft"), IE_Pressed, this, &AP_Player::SwapSquadLeft);
 	PlayerInputComponent->BindAction(TEXT("SwapRight"), IE_Pressed, this, &AP_Player::SwapSquadRight);
+	PlayerInputComponent->BindAction(TEXT("Acceleration"), IE_Pressed, this, &AP_Player::Accelerator);
 	PlayerInputComponent->BindAxis(TEXT("MoveHorizontal"), this, &AP_Player::MoveHorizontal);
 	PlayerInputComponent->BindAxis(TEXT("MoveVertical"), this, &AP_Player::MoveVertical);
+}
+
+void AP_Player::Accelerator()
+{
+	PathFollower->SetAcceleration(StatComponent->GetAcceleration());
+
 }
 
 void AP_Player::Fire()

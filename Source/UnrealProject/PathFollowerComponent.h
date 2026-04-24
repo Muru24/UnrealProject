@@ -21,6 +21,7 @@ public:
     bool HasValidBaseTransform() const { return bHasValidBaseTransform; }
     const FTransform& GetBaseWorldTransform() const { return BaseWorldTransform; }
     virtual void BeginPlay() override;
+    void SetAcceleration(float value) { Acceleration = value; }
 
 protected:
     //지정할 경로
@@ -28,8 +29,16 @@ protected:
     AActor* TargetPathActor;
 
     //이동속도
-    UPROPERTY(VisibleAnywhere, Category = "Movement")
+    UPROPERTY(EditAnywhere, Category = "Movement")
     float MoveSpeed = 0;
+
+    //가속도
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float Acceleration = 0;
+
+    //가속 여부
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    bool isAccelerator = false;
 
     //속도 보간 수치
     UPROPERTY(VisibleAnywhere, Category = "Movement")
@@ -68,4 +77,8 @@ protected:
     FTransform BaseWorldTransform;
 
     bool bHasValidBaseTransform = false;
+
+    //부스터 감소 속도
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float InterpSec;
 };

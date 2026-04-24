@@ -37,6 +37,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Collision")
 	class UBoxComponent* CollisionComp;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
+	class UNiagaraComponent* BulletVisualEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	class UNiagaraSystem* SelectedEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+	class UNiagaraSystem* HitEffect;
+
 public:	
 	virtual void Tick(float DeltaTime) override;
 	void HandleLifeTime(float DeltaTime);

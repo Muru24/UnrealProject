@@ -36,7 +36,7 @@ void UPathFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	if (!Spline) return;
 
 	float TotalLength = Spline->GetSplineLength();
-	CurrentDistance += MoveSpeed * DeltaTime;
+	CurrentDistance += (MoveSpeed + Acceleration) * DeltaTime;
 
 	// 1. 루핑(Looping) 및 거리 처리 개선
 	if (Spline->IsClosedLoop())
@@ -98,5 +98,11 @@ void UPathFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	if (bApplyOwnerTransform)
 	{
 		GetOwner()->SetActorLocationAndRotation(FinalLoc, FinalRot);
+	}
+
+	if (Acceleration > 0)
+	{
+		Acceleration = FMath::FInterpTo(Acceleration, 0.0f, DeltaTime, 1.f/ InterpSec);
+		if (Acceleration < 100) Acceleration = 0;
 	}
 }
