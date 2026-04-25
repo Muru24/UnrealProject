@@ -14,6 +14,20 @@ void UCraftAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 	AutoFireCooldownRemaining = FMath::Max(0.0f, AutoFireCooldownRemaining - DeltaTime);
 }
 
+void UCraftAttackComponent::ApplyLoadoutData(const FCraftLoadoutData& LoadoutData)
+{
+	ProjectileClass = LoadoutData.ProjectileClass;
+	AttackType = LoadoutData.AttackType;
+	AttackPattern = LoadoutData.AttackPattern;
+	MaxPenetrationCount = LoadoutData.MaxPenetrationCount;
+	ExplosionRadius = LoadoutData.ExplosionRadius;
+	BurstCount = LoadoutData.BurstCount;
+	SpreadCount = LoadoutData.SpreadCount;
+	SpreadAngle = LoadoutData.SpreadAngle;
+	MultiShotSpacing = LoadoutData.MultiShotSpacing;
+	AutoFireInterval = LoadoutData.AutoFireInterval;
+}
+
 bool UCraftAttackComponent::FireFromOrigin(USceneComponent* FireOriginComponent, const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn)
 {
 	if (!FireOriginComponent || !ProjectileClass || !GetWorld())
@@ -69,9 +83,9 @@ bool UCraftAttackComponent::SpawnProjectile(USceneComponent* FireOriginComponent
 		SpawnRotation,
 		SpawnParams);
 
-	if (NewBullet && TargetActor)
+	if (NewBullet)
 	{
-		NewBullet->SetTarget(TargetActor);
+		NewBullet->ConfigureAttackType(AttackType, MaxPenetrationCount, ExplosionRadius);
 	}
 
 	return NewBullet != nullptr;

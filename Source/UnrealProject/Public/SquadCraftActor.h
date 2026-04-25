@@ -2,16 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "CraftLoadoutComponent.h"
 #include "SquadComponent.h"
 #include "SquadCraftActor.generated.h"
-
-UENUM(BlueprintType)
-enum class ECraftCombatRole : uint8
-{
-	MainGun,
-	SupportRapid,
-	SupportHeavy
-};
 
 UCLASS()
 class UNREALPROJECT_API ASquadCraftActor : public AActor
@@ -35,7 +28,7 @@ public:
 
 	USceneComponent* GetFireOrigin() const { return FireOrigin; }
 	UStaticMeshComponent* GetCraftMesh() const { return CraftMesh; }
-	ECraftCombatRole GetCombatRole() const { return CombatRole; }
+	ECraftCombatRole GetCombatRole() const;
 	bool IsActiveCraft() const { return bIsActiveCraft; }
 
 protected:
@@ -56,6 +49,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UCraftAttackComponent* AttackComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UCraftLoadoutComponent* LoadoutComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class USkillComponent* SkillComponent;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Squad")
 	float TransformInterpSpeed = 8.0f;
 
@@ -65,9 +64,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Squad")
 	FVector InactiveScale = FVector(0.92f, 0.92f, 0.92f);
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	ECraftCombatRole CombatRole = ECraftCombatRole::SupportRapid;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Squad")
 	bool bIsActiveCraft = false;
 
@@ -76,4 +72,7 @@ protected:
 
 	FVector DesiredRelativeLocation = FVector::ZeroVector;
 	FRotator DesiredRelativeRotation = FRotator::ZeroRotator;
+
+private:
+	void ApplyLoadout();
 };

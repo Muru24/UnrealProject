@@ -60,6 +60,7 @@ void AP_Player::BeginPlay()
 
 	SpawnSquadCrafts();
 	RefreshSquadCrafts();
+	UpdateCameraAnchor(true);
 }
 
 void AP_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -133,6 +134,7 @@ void AP_Player::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	ApplyRailMovement(DeltaTime);
+	UpdateCameraAnchor(false);
 	HandleSupportAutoFire();
 	UpdateCameraPan(DeltaTime);
 }
@@ -159,6 +161,7 @@ void AP_Player::SwapSquadLeft()
 	{
 		SquadComponent->ShiftActiveSlotLeft();
 		RefreshSquadCrafts();
+		UpdateCameraAnchor(false);
 	}
 }
 
@@ -168,6 +171,7 @@ void AP_Player::SwapSquadRight()
 	{
 		SquadComponent->ShiftActiveSlotRight();
 		RefreshSquadCrafts();
+		UpdateCameraAnchor(false);
 	}
 }
 
@@ -240,6 +244,32 @@ void AP_Player::UpdateCameraPan(float DeltaTime)
 		SpringArm->SetRelativeRotation(
 			FMath::RInterpTo(SpringArm->GetRelativeRotation(), TargetRotation, DeltaTime, CameraMoveSpeed));
 	}
+}
+
+void AP_Player::UpdateCameraAnchor(bool bSnapToTarget)
+{
+	if (!SpringArm)
+	{
+		return;
+	}
+
+	ASquadCraftActor* ActiveCraft = GetActiveCraft();
+	const FVector TargetLocation = ActiveCraft ? ActiveCraft->GetCurrentRelativeLocation() : FVector::ZeroVector;
+
+	if (bSnapToTarget)
+	{
+		SpringArm->SetRelativeLocation(TargetLocation);
+		return;
+	}
+
+	const float DeltaTime = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.0f;
+	const FVector NewLocation = FMath::VInterpTo(
+		SpringArm->GetRelativeLocation(),
+		TargetLocation,
+		DeltaTime,
+		CameraAnchorFollowSpeed);
+
+	SpringArm->SetRelativeLocation(NewLocation);
 }
 
 void AP_Player::HandleSupportAutoFire()

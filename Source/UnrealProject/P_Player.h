@@ -58,6 +58,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	float MouseDeadZone = 0.15f;
 
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float CameraAnchorFollowSpeed = 10.0f;
+
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 
@@ -71,6 +74,7 @@ protected:
 	void SwapSquadRight();
 	void ApplyRailMovement(float DeltaTime);
 	void UpdateCameraPan(float DeltaTime);
+	void UpdateCameraAnchor(bool bSnapToTarget);
 	void HandleSupportAutoFire();
 
 	void SpawnSquadCrafts();

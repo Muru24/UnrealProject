@@ -7,6 +7,15 @@
 #include "BulletBase.generated.h"
 
 class UProjectileMovementComponent;
+
+UENUM(BlueprintType)
+enum class EBulletAttackType : uint8
+{
+	NonPiercing,
+	Piercing,
+	Explosive
+};
+
 UCLASS()
 class UNREALPROJECT_API ABulletBase : public AActor
 {
@@ -31,6 +40,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	float Damage = 1.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	EBulletAttackType AttackType = EBulletAttackType::NonPiercing;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Piercing", meta = (ClampMin = "0"))
+	int32 RemainingPenetrations = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Explosive", meta = (ClampMin = "0.0"))
+	float ExplosionRadius = 0.0f;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Bullet")
 	AActor* TargetActor;
 
@@ -53,6 +71,7 @@ public:
 
 	void SetTarget(AActor* target) { TargetActor = target; }
 	AActor* GetTarget() { return TargetActor; }
+	void ConfigureAttackType(EBulletAttackType InAttackType, int32 InRemainingPenetrations, float InExplosionRadius);
 
 	float GetSpeed() { return Speed; }
 	float GetMaxSpeed() { return MaxSpeed; }
@@ -64,4 +83,12 @@ public:
 
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+private:
+	bool ApplyDamageToActor(AActor* TargetActorToDamage);
+	void ApplyExplosionDamage(const FVector& ImpactLocation, AActor* DirectHitActor);
+	bool CanAffectActor(AActor* OtherActor) const;
+
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> DamagedActors;
 };

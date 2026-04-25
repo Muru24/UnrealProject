@@ -3,6 +3,8 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "CraftAttackComponent.h"
+#include "CraftLoadoutComponent.h"
+#include "SkillComponent.h"
 
 ASquadCraftActor::ASquadCraftActor()
 {
@@ -23,11 +25,15 @@ ASquadCraftActor::ASquadCraftActor()
 	FireOrigin->SetRelativeLocation(FVector(120.0f, 0.0f, 0.0f));
 
 	AttackComponent = CreateDefaultSubobject<UCraftAttackComponent>(TEXT("AttackComponent"));
+	LoadoutComponent = CreateDefaultSubobject<UCraftLoadoutComponent>(TEXT("LoadoutComponent"));
+	SkillComponent = CreateDefaultSubobject<USkillComponent>(TEXT("SkillComponent"));
 }
 
 void ASquadCraftActor::BeginPlay()
 {
 	Super::BeginPlay();
+
+	ApplyLoadout();
 
 	if (GetRootComponent())
 	{
@@ -52,6 +58,20 @@ void ASquadCraftActor::Tick(float DeltaTime)
 
 	const FVector TargetScale = bIsActiveCraft ? ActiveScale : InactiveScale;
 	VisualRoot->SetRelativeScale3D(FMath::VInterpTo(VisualRoot->GetRelativeScale3D(), TargetScale, DeltaTime, TransformInterpSpeed));
+}
+
+void ASquadCraftActor::ApplyLoadout()
+{
+	if (LoadoutComponent && AttackComponent)
+	{
+		LoadoutComponent->ApplyLoadoutToAttackComponent(AttackComponent);
+		LoadoutComponent->ApplyLoadoutToSkillComponent(SkillComponent);
+	}
+}
+
+ECraftCombatRole ASquadCraftActor::GetCombatRole() const
+{
+	return LoadoutComponent ? LoadoutComponent->GetCombatRole() : ECraftCombatRole::SupportRapid;
 }
 
 void ASquadCraftActor::SetActiveCraft(bool bInIsActiveCraft)
