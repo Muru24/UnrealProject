@@ -19,6 +19,8 @@ ASquadCraftActor::ASquadCraftActor()
 	CraftMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CraftMesh"));
 	CraftMesh->SetupAttachment(VisualRoot);
 	CraftMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CraftMesh->SetHiddenInGame(false);
+	CraftMesh->SetVisibility(true);
 
 	FireOrigin = CreateDefaultSubobject<USceneComponent>(TEXT("FireOrigin"));
 	FireOrigin->SetupAttachment(VisualRoot);
@@ -41,7 +43,17 @@ void ASquadCraftActor::BeginPlay()
 		GetRootComponent()->SetRelativeRotation(DesiredRelativeRotation);
 	}
 
-	VisualRoot->SetRelativeScale3D(bIsActiveCraft ? ActiveScale : InactiveScale);
+	if (VisualRoot)
+	{
+		VisualRoot->SetRelativeScale3D(bIsActiveCraft ? ActiveScale : InactiveScale);
+	}
+
+	if (CraftMesh)
+	{
+		CraftMesh->SetHiddenInGame(false);
+		CraftMesh->SetVisibility(true, true);
+		CraftMesh->SetRelativeRotation(DesiredMeshTiltRotation);
+	}
 }
 
 void ASquadCraftActor::Tick(float DeltaTime)
@@ -56,8 +68,18 @@ void ASquadCraftActor::Tick(float DeltaTime)
 			FMath::RInterpTo(GetCurrentRelativeRotation(), DesiredRelativeRotation, DeltaTime, TransformInterpSpeed));
 	}
 
-	const FVector TargetScale = bIsActiveCraft ? ActiveScale : InactiveScale;
-	VisualRoot->SetRelativeScale3D(FMath::VInterpTo(VisualRoot->GetRelativeScale3D(), TargetScale, DeltaTime, TransformInterpSpeed));
+	if (VisualRoot)
+	{
+		const FVector TargetScale = bIsActiveCraft ? ActiveScale : InactiveScale;
+		VisualRoot->SetRelativeScale3D(
+			FMath::VInterpTo(VisualRoot->GetRelativeScale3D(), TargetScale, DeltaTime, TransformInterpSpeed));
+	}
+
+	if (CraftMesh)
+	{
+		CraftMesh->SetRelativeRotation(
+			FMath::RInterpTo(CraftMesh->GetRelativeRotation(), DesiredMeshTiltRotation, DeltaTime, TransformInterpSpeed));
+	}
 }
 
 void ASquadCraftActor::ApplyLoadout()
@@ -83,6 +105,11 @@ void ASquadCraftActor::SetDesiredRelativeTransform(const FVector& InLocation, co
 {
 	DesiredRelativeLocation = InLocation;
 	DesiredRelativeRotation = InRotation;
+}
+
+void ASquadCraftActor::SetVisualTiltRotation(const FRotator& InRotation)
+{
+	DesiredMeshTiltRotation = InRotation;
 }
 
 FRotator ASquadCraftActor::GetCurrentRelativeRotation() const

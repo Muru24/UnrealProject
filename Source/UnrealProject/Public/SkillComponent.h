@@ -40,5 +40,6 @@ protected:
 	float OffensiveSkillCooldownRemaining = 0.0f;
 
 private:
+	void SanitizeSkillSpec(FSkillSpec& SkillSpec, ESkillType ExpectedSkillType) const;
 	bool TryActivateSkill(const FSkillSpec& SkillSpec, float& CooldownRemaining, ESkillType ExpectedSkillType, AActor* TargetActor);
 };

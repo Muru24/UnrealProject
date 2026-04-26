@@ -1,45 +1,49 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "LockOnComponent.generated.h"
 
-
 class UEnemyManager;
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class UNREALPROJECT_API ULockOnComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
 	ULockOnComponent();
 
-	//록온 타겟 찾는 함수
 	void TraceTarget();
-
-	//타겟 변경 함수
 	void ChangeTarget();
 
+	bool IsLockOnEnabled() const { return bIsLockOnEnabled; }
+	APawn* GetCurrentTarget() const { return CurrentTarget.Get(); }
+	int32 GetCurrentTargetIndex() const { return CurrentTargetIndex; }
+
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
 protected:
 	virtual void BeginPlay() override;
 
-public:
-	//록 온 여부
-	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category ="LockOn")
-	bool isLockOn = false;
-	
-	//현재 타겟
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "LockOn")
-	APawn* target;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LockOn")
+	bool bIsLockOnEnabled = false;
 
-	//현재 타겟
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "LockOn")
-	int32 targetIndex;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LockOn")
+	TObjectPtr<APawn> CurrentTarget = nullptr;
 
-	//몬스터들의 정보를 담고있는 매니저 참조
-	UEnemyManager* EnemyManager;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LockOn")
+	int32 CurrentTargetIndex = INDEX_NONE;
+
+	UPROPERTY()
+	TObjectPtr<UEnemyManager> EnemyManager = nullptr;
+
+private:
+	const TArray<APawn*>* GetEnemyList() const;
+	void ClearTarget();
+	void SetCurrentTarget(APawn* NewTarget, int32 NewIndex);
+	int32 FindClosestTargetIndex(const TArray<APawn*>& EnemyList) const;
+	int32 FindNextValidTargetIndex(const TArray<APawn*>& EnemyList, int32 StartIndex) const;
+	bool IsValidLockOnTarget(const APawn* CandidateTarget) const;
+	void RefreshCurrentTarget();
 };

@@ -1,53 +1,38 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "HomingMovementComponent.h"
+
 #include "BulletBase.h"
-#include "UObject/UObjectGlobals.h"
 
 UHomingMovementComponent::UHomingMovementComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-
 }
-
-
-void UHomingMovementComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-}
-
 
 void UHomingMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    ABulletBase* BulletOwner = Cast<ABulletBase>(GetOwner());
-    if (!BulletOwner || BulletOwner->IsPendingKill()) return;
+	ABulletBase* BulletOwner = Cast<ABulletBase>(GetOwner());
+	if (!IsValid(BulletOwner))
+	{
+		return;
+	}
 
-    AActor* CurrentTarget = BulletOwner->GetTarget();
+	AActor* CurrentTarget = BulletOwner->GetTarget();
+	if (!IsValid(CurrentTarget))
+	{
+		BulletOwner->SetTarget(nullptr);
+		CurrentTarget = nullptr;
+	}
 
-    if (CurrentTarget && !IsValid(CurrentTarget))
-    {
-        BulletOwner->SetTarget(nullptr);
-        CurrentTarget = nullptr;
-    }
+	if (CurrentTarget)
+	{
+		const FVector Direction = (CurrentTarget->GetActorLocation() - BulletOwner->GetActorLocation()).GetSafeNormal();
+		const FRotator TargetRotation = Direction.Rotation();
+		const FRotator NewRotation = FMath::RInterpTo(BulletOwner->GetActorRotation(), TargetRotation, DeltaTime, 20.0f);
+		BulletOwner->SetActorRotation(NewRotation);
+	}
 
-    if (CurrentTarget)
-    {
-        FVector Direction = (CurrentTarget->GetActorLocation() - BulletOwner->GetActorLocation()).GetSafeNormal();
-        FRotator TargetRot = Direction.Rotation();
-
-        FRotator NewRot = FMath::RInterpTo(BulletOwner->GetActorRotation(), TargetRot, DeltaTime, 20.0f);
-        BulletOwner->SetActorRotation(NewRot);
-    }
-
-    FVector MoveStep = BulletOwner->GetActorForwardVector() * BulletOwner->GetSpeed() * DeltaTime;
-    FHitResult SweepHit;
-
-    BulletOwner->AddActorWorldOffset(MoveStep, true, &SweepHit);
-
-    
+	const FVector MoveStep = BulletOwner->GetActorForwardVector() * BulletOwner->GetSpeed() * DeltaTime;
+	FHitResult SweepHit;
+	BulletOwner->AddActorWorldOffset(MoveStep, true, &SweepHit);
 }
-

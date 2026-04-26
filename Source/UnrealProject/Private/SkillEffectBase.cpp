@@ -2,7 +2,9 @@
 
 bool USkillEffectBase::ActivateSkill_Implementation(AActor* SourceActor, AActor* TargetActor, float SkillDuration)
 {
-	return SourceActor != nullptr;
+	const bool bHasValidSource = IsValid(SourceActor);
+	const bool bHasValidTarget = (TargetActor == nullptr) || IsValid(TargetActor);
+	return bHasValidSource && bHasValidTarget;
 }
 
 ESkillType USkillEffectBase::GetSkillType_Implementation() const

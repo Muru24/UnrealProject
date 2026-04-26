@@ -15,9 +15,6 @@ class UNREALPROJECT_API UHomingMovementComponent : public UActorComponent
 public:	
 	UHomingMovementComponent();
 
-protected:
-	virtual void BeginPlay() override;
-
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 };

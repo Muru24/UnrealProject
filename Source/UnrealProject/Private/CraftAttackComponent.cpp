@@ -14,28 +14,26 @@ void UCraftAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 	AutoFireCooldownRemaining = FMath::Max(0.0f, AutoFireCooldownRemaining - DeltaTime);
 }
 
-void UCraftAttackComponent::ApplyLoadoutData(const FCraftLoadoutData& LoadoutData)
+void UCraftAttackComponent::ApplyAttackConfig(const FCraftAttackConfig& InAttackConfig)
 {
-	ProjectileClass = LoadoutData.ProjectileClass;
-	AttackType = LoadoutData.AttackType;
-	AttackPattern = LoadoutData.AttackPattern;
-	MaxPenetrationCount = LoadoutData.MaxPenetrationCount;
-	ExplosionRadius = LoadoutData.ExplosionRadius;
-	BurstCount = LoadoutData.BurstCount;
-	SpreadCount = LoadoutData.SpreadCount;
-	SpreadAngle = LoadoutData.SpreadAngle;
-	MultiShotSpacing = LoadoutData.MultiShotSpacing;
-	AutoFireInterval = LoadoutData.AutoFireInterval;
+	AttackConfig = InAttackConfig;
+	AttackConfig.MaxPenetrationCount = FMath::Max(0, AttackConfig.MaxPenetrationCount);
+	AttackConfig.ExplosionRadius = FMath::Max(0.0f, AttackConfig.ExplosionRadius);
+	AttackConfig.BurstCount = FMath::Max(1, AttackConfig.BurstCount);
+	AttackConfig.SpreadCount = FMath::Max(1, AttackConfig.SpreadCount);
+	AttackConfig.SpreadAngle = FMath::Max(0.0f, AttackConfig.SpreadAngle);
+	AttackConfig.MultiShotSpacing = FMath::Max(0.0f, AttackConfig.MultiShotSpacing);
+	AttackConfig.AutoFireInterval = FMath::Max(0.05f, AttackConfig.AutoFireInterval);
 }
 
 bool UCraftAttackComponent::FireFromOrigin(USceneComponent* FireOriginComponent, const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn)
 {
-	if (!FireOriginComponent || !ProjectileClass || !GetWorld())
+	if (!FireOriginComponent || !AttackConfig.ProjectileClass || !GetWorld())
 	{
 		return false;
 	}
 
-	switch (AttackPattern)
+	switch (AttackConfig.AttackPattern)
 	{
 	case ECraftAttackPattern::Burst:
 		return FireBurst(FireOriginComponent, TargetPoint, TargetActor, InstigatorPawn);
@@ -59,13 +57,24 @@ bool UCraftAttackComponent::TryAutoFireFromOrigin(USceneComponent* FireOriginCom
 		return false;
 	}
 
-	AutoFireCooldownRemaining = AutoFireInterval;
+	AutoFireCooldownRemaining = AttackConfig.AutoFireInterval;
 	return true;
 }
 
-bool UCraftAttackComponent::SpawnProjectile(USceneComponent* FireOriginComponent, const FRotator& SpawnRotation, AActor* TargetActor, APawn* InstigatorPawn, float LateralOffset)
+FRotator UCraftAttackComponent::BuildAimRotation(USceneComponent* FireOriginComponent, const FVector& TargetPoint) const
 {
-	if (!FireOriginComponent || !ProjectileClass || !GetWorld())
+	if (!FireOriginComponent)
+	{
+		return FRotator::ZeroRotator;
+	}
+
+	const FVector AimDirection = (TargetPoint - FireOriginComponent->GetComponentLocation()).GetSafeNormal();
+	return AimDirection.Rotation();
+}
+
+bool UCraftAttackComponent::SpawnProjectile(USceneComponent* FireOriginComponent, const FRotator& SpawnRotation, APawn* InstigatorPawn, float LateralOffset)
+{
+	if (!FireOriginComponent || !AttackConfig.ProjectileClass || !GetWorld())
 	{
 		return false;
 	}
@@ -78,14 +87,14 @@ bool UCraftAttackComponent::SpawnProjectile(USceneComponent* FireOriginComponent
 	const FVector SpawnLocation = FireOriginComponent->GetComponentLocation() + SpawnRotation.RotateVector(FVector(0.0f, LateralOffset, 0.0f));
 
 	ABulletBase* NewBullet = GetWorld()->SpawnActor<ABulletBase>(
-		ProjectileClass,
+		AttackConfig.ProjectileClass,
 		SpawnLocation,
 		SpawnRotation,
 		SpawnParams);
 
 	if (NewBullet)
 	{
-		NewBullet->ConfigureAttackType(AttackType, MaxPenetrationCount, ExplosionRadius);
+		NewBullet->ConfigureAttackType(AttackConfig.AttackType, AttackConfig.MaxPenetrationCount, AttackConfig.ExplosionRadius);
 	}
 
 	return NewBullet != nullptr;
@@ -93,22 +102,20 @@ bool UCraftAttackComponent::SpawnProjectile(USceneComponent* FireOriginComponent
 
 bool UCraftAttackComponent::FireSingle(USceneComponent* FireOriginComponent, const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn)
 {
-	const FVector AimDirection = (TargetPoint - FireOriginComponent->GetComponentLocation()).GetSafeNormal();
-	return SpawnProjectile(FireOriginComponent, AimDirection.Rotation(), TargetActor, InstigatorPawn);
+	return SpawnProjectile(FireOriginComponent, BuildAimRotation(FireOriginComponent, TargetPoint), InstigatorPawn);
 }
 
 bool UCraftAttackComponent::FireBurst(USceneComponent* FireOriginComponent, const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn)
 {
-	const int32 ShotCount = FMath::Max(1, BurstCount);
-	const FVector AimDirection = (TargetPoint - FireOriginComponent->GetComponentLocation()).GetSafeNormal();
-	const FRotator BaseRotation = AimDirection.Rotation();
-	const float StartLateralOffset = -0.5f * static_cast<float>(ShotCount - 1) * MultiShotSpacing;
+	const int32 ShotCount = FMath::Max(1, AttackConfig.BurstCount);
+	const FRotator BaseRotation = BuildAimRotation(FireOriginComponent, TargetPoint);
+	const float StartLateralOffset = -0.5f * static_cast<float>(ShotCount - 1) * AttackConfig.MultiShotSpacing;
 	bool bSpawnedAnyProjectile = false;
 
 	for (int32 ShotIndex = 0; ShotIndex < ShotCount; ++ShotIndex)
 	{
-		const float LateralOffset = StartLateralOffset + static_cast<float>(ShotIndex) * MultiShotSpacing;
-		bSpawnedAnyProjectile |= SpawnProjectile(FireOriginComponent, BaseRotation, TargetActor, InstigatorPawn, LateralOffset);
+		const float LateralOffset = StartLateralOffset + static_cast<float>(ShotIndex) * AttackConfig.MultiShotSpacing;
+		bSpawnedAnyProjectile |= SpawnProjectile(FireOriginComponent, BaseRotation, InstigatorPawn, LateralOffset);
 	}
 
 	return bSpawnedAnyProjectile;
@@ -116,26 +123,25 @@ bool UCraftAttackComponent::FireBurst(USceneComponent* FireOriginComponent, cons
 
 bool UCraftAttackComponent::FireSpread(USceneComponent* FireOriginComponent, const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn)
 {
-	const int32 ShotCount = FMath::Max(1, SpreadCount);
-	const FVector AimDirection = (TargetPoint - FireOriginComponent->GetComponentLocation()).GetSafeNormal();
-	const FRotator BaseRotation = AimDirection.Rotation();
+	const int32 ShotCount = FMath::Max(1, AttackConfig.SpreadCount);
+	const FRotator BaseRotation = BuildAimRotation(FireOriginComponent, TargetPoint);
 
 	if (ShotCount == 1)
 	{
-		return SpawnProjectile(FireOriginComponent, BaseRotation, TargetActor, InstigatorPawn);
+		return SpawnProjectile(FireOriginComponent, BaseRotation, InstigatorPawn);
 	}
 
 	bool bSpawnedAnyProjectile = false;
-	const float AngleStep = SpreadAngle / static_cast<float>(ShotCount - 1);
-	const float StartYawOffset = -SpreadAngle * 0.5f;
-	const float StartLateralOffset = -0.5f * static_cast<float>(ShotCount - 1) * MultiShotSpacing;
+	const float AngleStep = AttackConfig.SpreadAngle / static_cast<float>(ShotCount - 1);
+	const float StartYawOffset = -AttackConfig.SpreadAngle * 0.5f;
+	const float StartLateralOffset = -0.5f * static_cast<float>(ShotCount - 1) * AttackConfig.MultiShotSpacing;
 
 	for (int32 ShotIndex = 0; ShotIndex < ShotCount; ++ShotIndex)
 	{
 		const float YawOffset = StartYawOffset + (AngleStep * ShotIndex);
-		const float LateralOffset = StartLateralOffset + static_cast<float>(ShotIndex) * MultiShotSpacing;
+		const float LateralOffset = StartLateralOffset + static_cast<float>(ShotIndex) * AttackConfig.MultiShotSpacing;
 		const FRotator ShotRotation(BaseRotation.Pitch, BaseRotation.Yaw + YawOffset, BaseRotation.Roll);
-		bSpawnedAnyProjectile |= SpawnProjectile(FireOriginComponent, ShotRotation, TargetActor, InstigatorPawn, LateralOffset);
+		bSpawnedAnyProjectile |= SpawnProjectile(FireOriginComponent, ShotRotation, InstigatorPawn, LateralOffset);
 	}
 
 	return bSpawnedAnyProjectile;

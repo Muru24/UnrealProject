@@ -2,8 +2,20 @@
 
 #include "CoreMinimal.h"
 #include "Pawn_Template.h"
-#include "SquadComponent.h"
+#include "SquadRuntimeComponent.h"
 #include "P_Player.generated.h"
+
+class ASquadCraftActor;
+class UCameraComponent;
+class ULockOnComponent;
+class UPathFollowerComponent;
+class UPlayerAimFireComponent;
+class UPlayerCameraRigComponent;
+class UPlayerRailMovementComponent;
+class URailOffsetComponent;
+class USpringArmComponent;
+class USquadComponent;
+class USupportFireComponent;
 
 UCLASS()
 class UNREALPROJECT_API AP_Player : public APawn_Template
@@ -14,52 +26,37 @@ protected:
 	AP_Player();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class USpringArmComponent* SpringArm;
+	TObjectPtr<USpringArmComponent> SpringArm;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UCameraComponent* Camera;
+	TObjectPtr<UCameraComponent> Camera;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class ULockOnComponent* LockOn;
+	TObjectPtr<ULockOnComponent> LockOn;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UPathFollowerComponent* PathFollower;
+	TObjectPtr<UPathFollowerComponent> PathFollower;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class URailOffsetComponent* RailOffset;
+	TObjectPtr<URailOffsetComponent> RailOffset;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class USquadComponent* SquadComponent;
+	TObjectPtr<USquadComponent> SquadComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Squad")
-	TSubclassOf<class ASquadCraftActor> LeftCraftClass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USquadRuntimeComponent> SquadRuntimeComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Squad")
-	TSubclassOf<class ASquadCraftActor> CenterCraftClass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPlayerAimFireComponent> PlayerAimFireComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Squad")
-	TSubclassOf<class ASquadCraftActor> RightCraftClass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPlayerCameraRigComponent> PlayerCameraRigComponent;
 
-	UPROPERTY()
-	class ASquadCraftActor* LeftCraft;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPlayerRailMovementComponent> PlayerRailMovementComponent;
 
-	UPROPERTY()
-	class ASquadCraftActor* CenterCraft;
-
-	UPROPERTY()
-	class ASquadCraftActor* RightCraft;
-
-	UPROPERTY(EditAnywhere, Category = "Camera")
-	float MaxCameraOffset = 300.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Camera")
-	float CameraMoveSpeed = 5.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Camera")
-	float MouseDeadZone = 0.15f;
-
-	UPROPERTY(EditAnywhere, Category = "Camera")
-	float CameraAnchorFollowSpeed = 10.0f;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USupportFireComponent> SupportFireComponent;
 
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
@@ -72,14 +69,6 @@ protected:
 	void MoveVertical(float Value);
 	void SwapSquadLeft();
 	void SwapSquadRight();
-	void ApplyRailMovement(float DeltaTime);
-	void UpdateCameraPan(float DeltaTime);
-	void UpdateCameraAnchor(bool bSnapToTarget);
 	void HandleSupportAutoFire();
-
-	void SpawnSquadCrafts();
-	void RefreshSquadCrafts();
-	class ASquadCraftActor* GetCraftForSlot(ESquadSlot Slot) const;
-	class ASquadCraftActor* GetActiveCraft() const;
-	AActor* GetPreferredAutoFireTarget() const;
+	ASquadCraftActor* GetActiveCraft() const;
 };

@@ -1,20 +1,18 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "EnemyManager.h"
 
 UEnemyManager::UEnemyManager()
 {
 }
 
-void UEnemyManager::AddEnemy(APawn* enemy)
+void UEnemyManager::AddEnemy(APawn* Enemy)
 {
-	if (enemy)
+	if (!Enemy || EnemyArr.Contains(Enemy))
 	{
-		EnemyArr.Add(enemy);
-		enemy->OnDestroyed.AddDynamic(this, &UEnemyManager::HandleTargetDestroyed);
+		return;
 	}
 
+	EnemyArr.Add(Enemy);
+	Enemy->OnDestroyed.AddDynamic(this, &UEnemyManager::HandleTargetDestroyed);
 }
 
 void UEnemyManager::HandleTargetDestroyed(AActor* DestroyedActor)

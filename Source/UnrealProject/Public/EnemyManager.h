@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -10,18 +8,17 @@ UCLASS()
 class UNREALPROJECT_API UEnemyManager : public UWorldSubsystem
 {
 	GENERATED_BODY()
-	
+
 public:
 	UEnemyManager();
 
-	//몬스터 추가
-	void AddEnemy(APawn* enemy);
+	void AddEnemy(APawn* Enemy);
+	const TArray<APawn*>& GetEnemys() const { return EnemyArr; }
 
-	//몬스터 배열 반환
-	TArray<APawn*> GetEnemys() const { return EnemyArr; }
 protected:
 	UFUNCTION()
 	void HandleTargetDestroyed(AActor* DestroyedActor);
 
-	TArray<APawn*> EnemyArr;
+	UPROPERTY()
+	TArray<TObjectPtr<APawn>> EnemyArr;
 };

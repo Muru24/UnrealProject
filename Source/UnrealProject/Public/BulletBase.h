@@ -1,12 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "BulletBase.generated.h"
-
-class UProjectileMovementComponent;
 
 UENUM(BlueprintType)
 enum class EBulletAttackType : uint8
@@ -20,22 +16,21 @@ UCLASS()
 class UNREALPROJECT_API ABulletBase : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	ABulletBase();
 
 protected:
 	virtual void BeginPlay() override;
 
-	//총알 삭제시간
 	UPROPERTY(EditAnywhere, Category = "Movement")
-	float LifeTime;
+	float LifeTime = 3.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
-	float Speed;
+	float Speed = 1500.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
-	float MaxSpeed;
+	float MaxSpeed = 1500.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	float Damage = 1.0f;
@@ -50,31 +45,31 @@ protected:
 	float ExplosionRadius = 0.0f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Bullet")
-	AActor* TargetActor;
+	TObjectPtr<AActor> TargetActor = nullptr;
 
 	UPROPERTY(VisibleAnywhere, Category = "Collision")
-	class UBoxComponent* CollisionComp;
+	TObjectPtr<class UBoxComponent> CollisionComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
-	class UNiagaraComponent* BulletVisualEffect;
+	TObjectPtr<class UNiagaraComponent> BulletVisualEffect;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
-	class UNiagaraSystem* SelectedEffect;
+	TObjectPtr<class UNiagaraSystem> SelectedEffect;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
-	class UNiagaraSystem* HitEffect;
+	TObjectPtr<class UNiagaraSystem> HitEffect;
 
-public:	
+public:
 	virtual void Tick(float DeltaTime) override;
 	void HandleLifeTime(float DeltaTime);
 	void ProcessImpact(AActor* OtherActor, const FVector& ImpactLocation);
 
-	void SetTarget(AActor* target) { TargetActor = target; }
-	AActor* GetTarget() { return TargetActor; }
+	void SetTarget(AActor* InTargetActor) { TargetActor = InTargetActor; }
+	AActor* GetTarget() const { return TargetActor.Get(); }
 	void ConfigureAttackType(EBulletAttackType InAttackType, int32 InRemainingPenetrations, float InExplosionRadius);
 
-	float GetSpeed() { return Speed; }
-	float GetMaxSpeed() { return MaxSpeed; }
+	float GetSpeed() const { return Speed; }
+	float GetMaxSpeed() const { return MaxSpeed; }
 
 	UFUNCTION()
 	void OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

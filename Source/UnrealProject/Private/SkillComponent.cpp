@@ -18,14 +18,14 @@ void USkillComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 void USkillComponent::SetBuffSkill(const FSkillSpec& InSkillSpec)
 {
 	BuffSkill = InSkillSpec;
-	BuffSkill.SkillType = ESkillType::Buff;
+	SanitizeSkillSpec(BuffSkill, ESkillType::Buff);
 	BuffSkillCooldownRemaining = 0.0f;
 }
 
 void USkillComponent::SetOffensiveSkill(const FSkillSpec& InSkillSpec)
 {
 	OffensiveSkill = InSkillSpec;
-	OffensiveSkill.SkillType = ESkillType::Offensive;
+	SanitizeSkillSpec(OffensiveSkill, ESkillType::Offensive);
 	OffensiveSkillCooldownRemaining = 0.0f;
 }
 
@@ -39,9 +39,16 @@ bool USkillComponent::TryActivateOffensiveSkill(AActor* TargetActor)
 	return TryActivateSkill(OffensiveSkill, OffensiveSkillCooldownRemaining, ESkillType::Offensive, TargetActor);
 }
 
+void USkillComponent::SanitizeSkillSpec(FSkillSpec& SkillSpec, ESkillType ExpectedSkillType) const
+{
+	SkillSpec.SkillType = ExpectedSkillType;
+	SkillSpec.Cooldown = FMath::Max(0.0f, SkillSpec.Cooldown);
+	SkillSpec.Duration = FMath::Max(0.0f, SkillSpec.Duration);
+}
+
 bool USkillComponent::TryActivateSkill(const FSkillSpec& SkillSpec, float& CooldownRemaining, ESkillType ExpectedSkillType, AActor* TargetActor)
 {
-	if (CooldownRemaining > 0.0f || !SkillSpec.IsValid())
+	if (CooldownRemaining > 0.0f || !SkillSpec.IsValid() || !GetOwner())
 	{
 		return false;
 	}
@@ -57,6 +64,6 @@ bool USkillComponent::TryActivateSkill(const FSkillSpec& SkillSpec, float& Coold
 		return false;
 	}
 
-	CooldownRemaining = SkillSpec.Cooldown;
+	CooldownRemaining = FMath::Max(0.0f, SkillSpec.Cooldown);
 	return true;
 }

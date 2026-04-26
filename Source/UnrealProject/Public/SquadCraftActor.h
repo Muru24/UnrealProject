@@ -1,8 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
 #include "CraftLoadoutComponent.h"
+#include "GameFramework/Actor.h"
 #include "SquadComponent.h"
 #include "SquadCraftActor.generated.h"
 
@@ -14,6 +14,7 @@ class UNREALPROJECT_API ASquadCraftActor : public AActor
 public:
 	ASquadCraftActor();
 
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
 	void SetAssignedSlot(ESquadSlot InAssignedSlot) { AssignedSlot = InAssignedSlot; }
@@ -21,8 +22,10 @@ public:
 
 	void SetActiveCraft(bool bInIsActiveCraft);
 	void SetDesiredRelativeTransform(const FVector& InLocation, const FRotator& InRotation);
+	void SetVisualTiltRotation(const FRotator& InRotation);
 	FRotator GetCurrentRelativeRotation() const;
 	FVector GetCurrentRelativeLocation() const;
+
 	bool FireAt(const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn);
 	bool TryAutoFireAt(const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn);
 
@@ -32,28 +35,26 @@ public:
 	bool IsActiveCraft() const { return bIsActiveCraft; }
 
 protected:
-	virtual void BeginPlay() override;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USceneComponent> SceneRoot;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	USceneComponent* SceneRoot;
+	TObjectPtr<USceneComponent> VisualRoot;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	USceneComponent* VisualRoot;
+	TObjectPtr<UStaticMeshComponent> CraftMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UStaticMeshComponent* CraftMesh;
+	TObjectPtr<USceneComponent> FireOrigin;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	USceneComponent* FireOrigin;
+	TObjectPtr<class UCraftAttackComponent> AttackComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UCraftAttackComponent* AttackComponent;
+	TObjectPtr<class UCraftLoadoutComponent> LoadoutComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UCraftLoadoutComponent* LoadoutComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class USkillComponent* SkillComponent;
+	TObjectPtr<class USkillComponent> SkillComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Squad")
 	float TransformInterpSpeed = 8.0f;
@@ -72,6 +73,7 @@ protected:
 
 	FVector DesiredRelativeLocation = FVector::ZeroVector;
 	FRotator DesiredRelativeRotation = FRotator::ZeroRotator;
+	FRotator DesiredMeshTiltRotation = FRotator::ZeroRotator;
 
 private:
 	void ApplyLoadout();

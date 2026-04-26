@@ -8,11 +8,6 @@ UCraftLoadoutComponent::UCraftLoadoutComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UCraftLoadoutComponent::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
 void UCraftLoadoutComponent::ApplyLoadoutToAttackComponent(UCraftAttackComponent* AttackComponent) const
 {
 	if (!AttackComponent)
@@ -20,7 +15,7 @@ void UCraftLoadoutComponent::ApplyLoadoutToAttackComponent(UCraftAttackComponent
 		return;
 	}
 
-	AttackComponent->ApplyLoadoutData(LoadoutData);
+	AttackComponent->ApplyAttackConfig(LoadoutData.AttackConfig);
 }
 
 void UCraftLoadoutComponent::ApplyLoadoutToSkillComponent(USkillComponent* SkillComponent) const
@@ -30,6 +25,6 @@ void UCraftLoadoutComponent::ApplyLoadoutToSkillComponent(USkillComponent* Skill
 		return;
 	}
 
-	SkillComponent->SetBuffSkill(LoadoutData.BuffSkill);
-	SkillComponent->SetOffensiveSkill(LoadoutData.OffensiveSkill);
+	SkillComponent->SetBuffSkill(LoadoutData.SkillConfig.BuffSkill);
+	SkillComponent->SetOffensiveSkill(LoadoutData.SkillConfig.OffensiveSkill);
 }

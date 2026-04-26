@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -9,76 +7,64 @@
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class UNREALPROJECT_API UPathFollowerComponent : public UActorComponent
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    UPathFollowerComponent();
-    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	UPathFollowerComponent();
 
-    void SetTargetPath(AActor* InPathActor) { TargetPathActor = InPathActor; }
-    void SetPathSpeed(float Speed) { MoveSpeed = Speed; }
-    void SetApplyOwnerTransform(bool bInApplyOwnerTransform) { bApplyOwnerTransform = bInApplyOwnerTransform; }
-    bool HasValidBaseTransform() const { return bHasValidBaseTransform; }
-    const FTransform& GetBaseWorldTransform() const { return BaseWorldTransform; }
-    virtual void BeginPlay() override;
-    void SetAcceleration(float value) { Acceleration = value; }
+	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	void SetTargetPath(AActor* InPathActor) { TargetPathActor = InPathActor; }
+	void SetPathSpeed(float Speed) { MoveSpeed = Speed; }
+	void SetApplyOwnerTransform(bool bInApplyOwnerTransform) { bApplyOwnerTransform = bInApplyOwnerTransform; }
+	void SetAcceleration(float Value);
+	bool IsAccelerationActive() const { return Acceleration > 0.0f && RemainingAccelerationTime > 0.0f; }
+	bool HasValidBaseTransform() const { return bHasValidBaseTransform; }
+	const FTransform& GetBaseWorldTransform() const { return BaseWorldTransform; }
 
 protected:
-    //지정할 경로
-    UPROPERTY(EditAnywhere, Category = "Movement")
-    AActor* TargetPathActor;
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	TObjectPtr<AActor> TargetPathActor;
 
-    //이동속도
-    UPROPERTY(EditAnywhere, Category = "Movement")
-    float MoveSpeed = 0;
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float MoveSpeed = 0.0f;
 
-    //가속도
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-    float Acceleration = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float Acceleration = 0.0f;
 
-    //가속 여부
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-    bool isAccelerator = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float AccelerationDuration = 0.25f;
 
-    //속도 보간 수치
-    UPROPERTY(VisibleAnywhere, Category = "Movement")
-    float LocationInterpSpeed = 15.0f;
+	UPROPERTY(VisibleAnywhere, Category = "Movement")
+	float LocationInterpSpeed = 15.0f;
 
-    //좌우 뱅킹 강도
-    UPROPERTY(EditAnywhere, Category = "Movement")
-    float BankingIntensity = 1.5f;
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float BankingIntensity = 1.5f;
 
-    //회전 속도
-    UPROPERTY(EditAnywhere, Category = "Movement")
-    float RotationInterpSpeed = 3.0f;
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float RotationInterpSpeed = 3.0f;
 
-    //뱅킹 부드러움
-    UPROPERTY(EditAnywhere, Category = "Movement|Banking")
-    float BankingInterpSpeed = 2.0f; 
+	UPROPERTY(EditAnywhere, Category = "Movement|Banking")
+	float BankingInterpSpeed = 2.0f;
 
-    //상하 뱅킹
-    UPROPERTY(EditAnywhere, Category = "Movement|Banking")
-    float PitchExaggeration = 1.2f; 
+	UPROPERTY(EditAnywhere, Category = "Movement|Banking")
+	float PitchExaggeration = 1.2f;
 
-    //시작 위치
-    UPROPERTY(EditAnywhere, Category = "Movement|Banking")
-    float CurrentDistance = 0.0f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Banking")
+	float CurrentDistance = 0.0f;
 
-    // 타겟 Yaw 변화량 (뱅킹 계산용)
-    float InterpolatedYawDelta = 0.0f; 
+	float InterpolatedYawDelta = 0.0f;
+	float CurrentRoll = 0.0f;
 
-    // 현재 Roll 값 (부드러운 뱅킹용)
-    float CurrentRoll = 0.0f;
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	bool bApplyOwnerTransform = true;
 
-    UPROPERTY(EditAnywhere, Category = "Movement")
-    bool bApplyOwnerTransform = true;
+	UPROPERTY(VisibleAnywhere, Category = "Movement")
+	FTransform BaseWorldTransform;
 
-    UPROPERTY(VisibleAnywhere, Category = "Movement")
-    FTransform BaseWorldTransform;
+	UPROPERTY(VisibleAnywhere, Category = "Movement")
+	float RemainingAccelerationTime = 0.0f;
 
-    bool bHasValidBaseTransform = false;
-
-    //부스터 감소 속도
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-    float InterpSec;
+	bool bHasValidBaseTransform = false;
 };

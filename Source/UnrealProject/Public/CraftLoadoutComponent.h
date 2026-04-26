@@ -1,8 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BulletBase.h"
 #include "Components/ActorComponent.h"
+#include "CraftCombatTypes.h"
 #include "SkillTypes.h"
 #include "CraftLoadoutComponent.generated.h"
 
@@ -17,12 +17,40 @@ enum class ECraftCombatRole : uint8
 	SupportHeavy
 };
 
-UENUM(BlueprintType)
-enum class ECraftAttackPattern : uint8
+USTRUCT(BlueprintType)
+struct FCraftIdentityConfig
 {
-	Single,
-	Burst,
-	Spread
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName LoadoutId = TEXT("Default");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	ECraftCombatRole CombatRole = ECraftCombatRole::SupportRapid;
+};
+
+USTRUCT(BlueprintType)
+struct FCraftSkillConfig
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skills")
+	FSkillSpec BuffSkill;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skills")
+	FSkillSpec OffensiveSkill;
+};
+
+USTRUCT(BlueprintType)
+struct FCraftPresentationConfig
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presentation")
+	FName VisualProfileId = TEXT("Default");
 };
 
 USTRUCT(BlueprintType)
@@ -31,49 +59,16 @@ struct FCraftLoadoutData
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout")
-	FName LoadoutId = TEXT("Default");
+	FCraftIdentityConfig Identity;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout")
-	FText DisplayName;
+	FCraftAttackConfig AttackConfig;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout")
-	ECraftCombatRole CombatRole = ECraftCombatRole::SupportRapid;
+	FCraftSkillConfig SkillConfig;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout")
-	TSubclassOf<ABulletBase> ProjectileClass;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout")
-	EBulletAttackType AttackType = EBulletAttackType::NonPiercing;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout")
-	ECraftAttackPattern AttackPattern = ECraftAttackPattern::Single;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout|Piercing", meta = (ClampMin = "0"))
-	int32 MaxPenetrationCount = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout|Explosive", meta = (ClampMin = "0.0"))
-	float ExplosionRadius = 0.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout|Burst", meta = (ClampMin = "1"))
-	int32 BurstCount = 3;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout|Spread", meta = (ClampMin = "1"))
-	int32 SpreadCount = 3;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout|Spread", meta = (ClampMin = "0.0"))
-	float SpreadAngle = 18.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout|Multi Shot", meta = (ClampMin = "0.0"))
-	float MultiShotSpacing = 18.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout|Auto Fire", meta = (ClampMin = "0.05"))
-	float AutoFireInterval = 0.35f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout|Skills")
-	FSkillSpec BuffSkill;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Loadout|Skills")
-	FSkillSpec OffensiveSkill;
+	FCraftPresentationConfig PresentationConfig;
 };
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -84,12 +79,14 @@ class UNREALPROJECT_API UCraftLoadoutComponent : public UActorComponent
 public:
 	UCraftLoadoutComponent();
 
-	virtual void BeginPlay() override;
-
 	void ApplyLoadoutToAttackComponent(UCraftAttackComponent* AttackComponent) const;
 	void ApplyLoadoutToSkillComponent(USkillComponent* SkillComponent) const;
 	const FCraftLoadoutData& GetLoadoutData() const { return LoadoutData; }
-	ECraftCombatRole GetCombatRole() const { return LoadoutData.CombatRole; }
+	const FCraftIdentityConfig& GetIdentityConfig() const { return LoadoutData.Identity; }
+	const FCraftAttackConfig& GetAttackConfig() const { return LoadoutData.AttackConfig; }
+	const FCraftSkillConfig& GetSkillConfig() const { return LoadoutData.SkillConfig; }
+	const FCraftPresentationConfig& GetPresentationConfig() const { return LoadoutData.PresentationConfig; }
+	ECraftCombatRole GetCombatRole() const { return LoadoutData.Identity.CombatRole; }
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Loadout")
