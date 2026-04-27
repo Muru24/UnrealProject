@@ -15,6 +15,7 @@
 #include "SquadRuntimeComponent.h"
 #include "StatComponent.h"
 #include "SupportFireComponent.h"
+#include "InputCoreTypes.h"
 
 AP_Player::AP_Player()
 {
@@ -92,6 +93,8 @@ void AP_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction(TEXT("Acceleration"), IE_Pressed, this, &AP_Player::Accelerator);
 	PlayerInputComponent->BindAxis(TEXT("MoveHorizontal"), this, &AP_Player::MoveHorizontal);
 	PlayerInputComponent->BindAxis(TEXT("MoveVertical"), this, &AP_Player::MoveVertical);
+	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &AP_Player::TriggerOffensiveSkill);
+	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &AP_Player::TriggerBuffSkill);
 }
 
 void AP_Player::Accelerator()
@@ -185,6 +188,45 @@ void AP_Player::SwapSquadRight()
 	if (PlayerCameraRigComponent)
 	{
 		PlayerCameraRigComponent->UpdateCameraAnchor(SpringArm, GetActiveCraft(), false);
+	}
+}
+
+void AP_Player::TriggerOffensiveSkill()
+{
+	if (OffensiveSkillRemainingUses <= 0)
+	{
+		return;
+	}
+
+	ASquadCraftActor* ActiveCraft = GetActiveCraft();
+	if (!ActiveCraft)
+	{
+		return;
+	}
+
+	AActor* SkillTarget = LockOn ? LockOn->GetCurrentTarget() : nullptr;
+	if (ActiveCraft->TryActivateOffensiveSkill(SkillTarget))
+	{
+		OffensiveSkillRemainingUses--;
+	}
+}
+
+void AP_Player::TriggerBuffSkill()
+{
+	if (BuffSkillRemainingUses <= 0)
+	{
+		return;
+	}
+
+	ASquadCraftActor* ActiveCraft = GetActiveCraft();
+	if (!ActiveCraft)
+	{
+		return;
+	}
+
+	if (ActiveCraft->TryActivateBuffSkill(nullptr))
+	{
+		BuffSkillRemainingUses--;
 	}
 }
 

@@ -25,6 +25,13 @@ void UCraftLoadoutComponent::ApplyLoadoutToSkillComponent(USkillComponent* Skill
 		return;
 	}
 
-	SkillComponent->SetBuffSkill(LoadoutData.SkillConfig.BuffSkill);
-	SkillComponent->SetOffensiveSkill(LoadoutData.SkillConfig.OffensiveSkill);
+	if (LoadoutData.SkillConfig.BuffSkill.IsValid())
+	{
+		SkillComponent->SetBuffSkill(LoadoutData.SkillConfig.BuffSkill);
+	}
+
+	if (LoadoutData.SkillConfig.OffensiveSkill.IsValid())
+	{
+		SkillComponent->SetOffensiveSkill(LoadoutData.SkillConfig.OffensiveSkill);
+	}
 }

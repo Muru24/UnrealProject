@@ -133,3 +133,17 @@ bool ASquadCraftActor::TryAutoFireAt(const FVector& TargetPoint, AActor* TargetA
 		? AttackComponent->TryAutoFireFromOrigin(FireOrigin, TargetPoint, TargetActor, InstigatorPawn)
 		: false;
 }
+
+bool ASquadCraftActor::TryActivateOffensiveSkill(AActor* TargetActor)
+{
+	return bIsActiveCraft && SkillComponent
+		? SkillComponent->TryActivateOffensiveSkill(TargetActor)
+		: false;
+}
+
+bool ASquadCraftActor::TryActivateBuffSkill(AActor* TargetActor)
+{
+	return bIsActiveCraft && SkillComponent
+		? SkillComponent->TryActivateBuffSkill(TargetActor)
+		: false;
+}

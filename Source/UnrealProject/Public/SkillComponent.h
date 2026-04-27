@@ -27,10 +27,10 @@ public:
 	const FSkillSpec& GetOffensiveSkill() const { return OffensiveSkill; }
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skills")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skills")
 	FSkillSpec BuffSkill;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skills")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skills")
 	FSkillSpec OffensiveSkill;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skills")

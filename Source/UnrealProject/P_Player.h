@@ -69,6 +69,12 @@ protected:
 	void MoveVertical(float Value);
 	void SwapSquadLeft();
 	void SwapSquadRight();
+	void TriggerOffensiveSkill();
+	void TriggerBuffSkill();
 	void HandleSupportAutoFire();
 	ASquadCraftActor* GetActiveCraft() const;
+
+private:
+	int32 OffensiveSkillRemainingUses = 3;
+	int32 BuffSkillRemainingUses = 3;
 };

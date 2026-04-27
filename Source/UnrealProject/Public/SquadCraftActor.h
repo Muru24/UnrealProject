@@ -28,11 +28,14 @@ public:
 
 	bool FireAt(const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn);
 	bool TryAutoFireAt(const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn);
+	bool TryActivateOffensiveSkill(AActor* TargetActor = nullptr);
+	bool TryActivateBuffSkill(AActor* TargetActor = nullptr);
 
 	USceneComponent* GetFireOrigin() const { return FireOrigin; }
 	UStaticMeshComponent* GetCraftMesh() const { return CraftMesh; }
 	ECraftCombatRole GetCombatRole() const;
 	bool IsActiveCraft() const { return bIsActiveCraft; }
+	class USkillComponent* GetSkillComponent() const { return SkillComponent; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
