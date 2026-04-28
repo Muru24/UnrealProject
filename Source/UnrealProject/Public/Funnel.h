@@ -24,7 +24,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Beam|Components")
 	TObjectPtr<USceneComponent> FireOrigin;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Beam|Attack")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Beam|Attack")	
 	TSubclassOf<ABeamEffectActor> BeamActorClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Beam|Attack", meta = (ClampMin = "0.01"))

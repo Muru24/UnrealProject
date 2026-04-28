@@ -86,6 +86,7 @@ void ABeamEffectActor::ApplyBeamSize()
 {
 	if (BeamComponent && BeamSizeParameterName != NAME_None)
 	{
+
 		BeamComponent->SetVariableFloat(BeamSizeParameterName, BeamSize);
 	}
 }
