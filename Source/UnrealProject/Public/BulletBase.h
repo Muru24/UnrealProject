@@ -24,7 +24,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
-	float LifeTime = 3.0f;
+	float LifeTime = 10.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float Speed = 1500.0f;

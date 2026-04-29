@@ -23,6 +23,8 @@ public:
 	bool HasValidBaseTransform() const { return bHasValidBaseTransform; }
 	const FTransform& GetBaseWorldTransform() const { return BaseWorldTransform; }
 
+	float GetCurrentDistance() const { return CurrentDistance; }
+
 protected:
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	TObjectPtr<AActor> TargetPathActor;

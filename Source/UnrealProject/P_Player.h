@@ -74,7 +74,15 @@ protected:
 	void HandleSupportAutoFire();
 	ASquadCraftActor* GetActiveCraft() const;
 
-private:
-	int32 OffensiveSkillRemainingUses = 3;
-	int32 BuffSkillRemainingUses = 3;
+public:
+    UFUNCTION(BlueprintCallable, Category = "Skill")
+    const TArray<AActor*>& GetSkillTargetEnemies() const { return SkillTargetEnemies; }
+
+    void SetSkillTargetEnemies(const TArray<AActor*>& InTargets) { SkillTargetEnemies = InTargets; }
+    void ClearSkillTargetEnemies() { SkillTargetEnemies.Empty(); }
+
+protected:
+    UPROPERTY(BlueprintReadOnly, Category = "Skill")
+    TArray<AActor*> SkillTargetEnemies;
+
 };

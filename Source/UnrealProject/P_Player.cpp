@@ -193,11 +193,6 @@ void AP_Player::SwapSquadRight()
 
 void AP_Player::TriggerOffensiveSkill()
 {
-	if (OffensiveSkillRemainingUses <= 0)
-	{
-		return;
-	}
-
 	ASquadCraftActor* ActiveCraft = GetActiveCraft();
 	if (!ActiveCraft)
 	{
@@ -205,29 +200,18 @@ void AP_Player::TriggerOffensiveSkill()
 	}
 
 	AActor* SkillTarget = LockOn ? LockOn->GetCurrentTarget() : nullptr;
-	if (ActiveCraft->TryActivateOffensiveSkill(SkillTarget))
-	{
-		OffensiveSkillRemainingUses--;
-	}
+	ActiveCraft->TryActivateOffensiveSkill(SkillTarget);
 }
 
 void AP_Player::TriggerBuffSkill()
 {
-	if (BuffSkillRemainingUses <= 0)
-	{
-		return;
-	}
-
 	ASquadCraftActor* ActiveCraft = GetActiveCraft();
 	if (!ActiveCraft)
 	{
 		return;
 	}
 
-	if (ActiveCraft->TryActivateBuffSkill(nullptr))
-	{
-		BuffSkillRemainingUses--;
-	}
+	ActiveCraft->TryActivateBuffSkill(nullptr);
 }
 
 void AP_Player::HandleSupportAutoFire()

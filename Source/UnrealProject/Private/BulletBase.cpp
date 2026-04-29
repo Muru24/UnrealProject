@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "BulletBase.h"
@@ -187,10 +187,24 @@ void ABulletBase::ApplyExplosionDamage(const FVector& ImpactLocation, AActor* Di
 
 bool ABulletBase::CanAffectActor(AActor* OtherActor) const
 {
-    return OtherActor
-        && OtherActor != this
-        && OtherActor != GetOwner()
-        && !OtherActor->IsA<ABulletBase>();
+    if (!OtherActor || OtherActor == this || OtherActor->IsA<ABulletBase>())
+    {
+        return false;
+    }
+
+    AActor* MyOwner = GetOwner();
+    if (OtherActor == MyOwner)
+    {
+        return false;
+    }
+
+    // 내 주인의 주인도 무시 (예: 기체의 주인인 플레이어 본체)
+    if (MyOwner && OtherActor == MyOwner->GetOwner())
+    {
+        return false;
+    }
+
+    return true;
 }
 
 

@@ -29,6 +29,7 @@ void ULockOnComponent::SetCurrentTarget(APawn* NewTarget, int32 NewIndex)
 {
 	CurrentTarget = NewTarget;
 	CurrentTargetIndex = NewTarget ? NewIndex : INDEX_NONE;
+	UE_LOG(LogTemp, Display, TEXT("%s"), *CurrentTarget.GetName());
 }
 
 int32 ULockOnComponent::FindClosestTargetIndex(const TArray<APawn*>& EnemyList) const
