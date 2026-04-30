@@ -8,7 +8,7 @@ public class UnrealProject : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore","UMG", "Niagara" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore","UMG", "Niagara", "GeometryCollectionEngine", "Chaos", "ChaosSolverEngine" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

@@ -21,10 +21,15 @@ public:
     void StartLaser(AActor* InTarget);
 
     UFUNCTION(BlueprintCallable, Category = "Laser")
+    void StartLaserFromComponent(USceneComponent* InTargetComponent);
+
+    UFUNCTION(BlueprintCallable, Category = "Laser")
     void StopLaser();
 
     // 빔의 발사 지점(SceneComponent)을 설정합니다. 없을 경우 Actor 위치를 사용합니다.
     void SetFireOrigin(USceneComponent* InOrigin) { FireOrigin = InOrigin; }
+    void SetBeamExtraDistance(float InDistance) { BeamExtraDistance = InDistance; }
+    void SetAttackActiveDuration(float InDuration) { AttackActiveDuration = InDuration; }
     AActor* GetTargetActor() const { return TargetActor; }
 
 protected:
@@ -54,6 +59,9 @@ protected:
 
     UPROPERTY()
     AActor* TargetActor;
+
+    UPROPERTY()
+    USceneComponent* TargetComponent;
 
     UPROPERTY()
     USceneComponent* FireOrigin;

@@ -20,7 +20,7 @@ void UStatComponent::ApplyDamage(float DamageAmount)
 
     if (Stats.unit.HP <= 0.0f)
     {
-        GetOwner()->Destroy();
+        //GetOwner()->Destroy();
     }
 }
 

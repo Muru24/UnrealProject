@@ -20,7 +20,7 @@ void ULaserAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 
     if (bAttackActive && ActiveBeamActor)
     {
-        if (!IsValid(TargetActor))
+        if (!IsValid(TargetActor) && !IsValid(TargetComponent))
         {
             StopLaser();
             return;
@@ -30,7 +30,7 @@ void ULaserAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
         AttackTimeTracker += DeltaTime;
         
         // 0.0 ~ 1.0 비율 계산
-        const float Alpha = FMath::Clamp(AttackTimeTracker / AttackActiveDuration, 0.0f, 1.0f);
+        const float Alpha = AttackActiveDuration > 0.0f ? FMath::Clamp(AttackTimeTracker / AttackActiveDuration, 0.0f, 1.0f) : 0.0f;
         
         // 빔 굵기 보간
         const float CurrentSize = FMath::Lerp(InitialBeamSize, FinalBeamSize, Alpha);
@@ -58,18 +58,45 @@ void ULaserAttackComponent::StartLaser(AActor* InTarget)
     if (!InTarget) return;
 
     TargetActor = InTarget;
+    TargetComponent = nullptr;
     AttackTimeTracker = 0.0f;
     bAttackActive = true;
 
     FireBeam();
 
-    // 공격 종료 타이머 설정
-    GetWorld()->GetTimerManager().SetTimer(
-        AttackStopTimerHandle,
-        this,
-        &ULaserAttackComponent::StopLaser,
-        AttackActiveDuration,
-        false);
+    // 공격 종료 타이머 설정 (0 이하일 경우 무한 지속)
+    if (AttackActiveDuration > 0.0f)
+    {
+        GetWorld()->GetTimerManager().SetTimer(
+            AttackStopTimerHandle,
+            this,
+            &ULaserAttackComponent::StopLaser,
+            AttackActiveDuration,
+            false);
+    }
+}
+
+void ULaserAttackComponent::StartLaserFromComponent(USceneComponent* InTargetComponent)
+{
+    if (!InTargetComponent) return;
+
+    TargetComponent = InTargetComponent;
+    TargetActor = nullptr;
+    AttackTimeTracker = 0.0f;
+    bAttackActive = true;
+
+    FireBeam();
+
+    // 공격 종료 타이머 설정 (0 이하일 경우 무한 지속)
+    if (AttackActiveDuration > 0.0f)
+    {
+        GetWorld()->GetTimerManager().SetTimer(
+            AttackStopTimerHandle,
+            this,
+            &ULaserAttackComponent::StopLaser,
+            AttackActiveDuration,
+            false);
+    }
 }
 
 void ULaserAttackComponent::StopLaser()
@@ -81,7 +108,7 @@ void ULaserAttackComponent::StopLaser()
 
 void ULaserAttackComponent::FireBeam()
 {
-    if (!bAttackActive || !IsValid(TargetActor) || !BeamActorClass) return;
+    if (!bAttackActive || (!IsValid(TargetActor) && !IsValid(TargetComponent)) || !BeamActorClass) return;
 
     DeactivateActiveBeam();
 
@@ -117,10 +144,22 @@ void ULaserAttackComponent::DeactivateActiveBeam()
 
 FVector ULaserAttackComponent::GetTargetLocationWithExtension() const
 {
-    if (!IsValid(TargetActor)) return FVector::ZeroVector;
+    FVector TargetLoc = FVector::ZeroVector;
+    
+    if (IsValid(TargetComponent))
+    {
+        TargetLoc = TargetComponent->GetComponentLocation();
+    }
+    else if (IsValid(TargetActor))
+    {
+        TargetLoc = TargetActor->GetActorLocation();
+    }
+    else
+    {
+        return FVector::ZeroVector;
+    }
 
     const FVector Origin = GetFireOriginLocation();
-    const FVector TargetLoc = TargetActor->GetActorLocation();
     const FVector Direction = (TargetLoc - Origin).GetSafeNormal();
 
     return TargetLoc + (Direction * BeamExtraDistance);
