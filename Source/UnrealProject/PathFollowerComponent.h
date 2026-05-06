@@ -16,6 +16,7 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	void SetTargetPath(AActor* InPathActor) { TargetPathActor = InPathActor; }
+	AActor* GetTargetPathActor() const { return TargetPathActor; }
 	void SetPathSpeed(float Speed) { MoveSpeed = Speed; }
 	void SetApplyOwnerTransform(bool bInApplyOwnerTransform) { bApplyOwnerTransform = bInApplyOwnerTransform; }
 	void SetAcceleration(float Value);
@@ -30,7 +31,7 @@ protected:
 	TObjectPtr<AActor> TargetPathActor;
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
-	float MoveSpeed = 0.0f;
+	float MoveSpeed = 1000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float Acceleration = 0.0f;

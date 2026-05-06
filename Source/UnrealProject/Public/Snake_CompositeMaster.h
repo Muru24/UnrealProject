@@ -12,6 +12,7 @@
 class USplineComponent;
 class USnakePathController;
 class USnakeSkillManager;
+enum class EBossEncounterPhase : uint8;
 // ESnakeSkillPhase는 SnakeSkillManager.h로 이동되었습니다.
 
 UCLASS()
@@ -33,6 +34,7 @@ public:
 	ASnake_CompositeMaster();
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	void ApplyBossPhase(EBossEncounterPhase NewPhase);
 
     // 궤도 위치 및 축 계산을 위한 헬퍼 함수
     void GetOrbitTransform(float Angle, const FRotator& Rotation, FVector& OutLocation, FVector& OutForward, FVector& OutRight, FVector& OutUp, const FVector& CenterLoc);

@@ -56,7 +56,7 @@ void AP_Player::BeginPlay()
 
 	APawn_Template::BeginPlay();
 
-	if (PathFollower && !PathFollower->HasValidBaseTransform())
+	if (PathFollower && !IsValid(PathFollower->GetTargetPathActor()))
 	{
 		if (AActor* PathActor = UGameplayStatics::GetActorOfClass(GetWorld(), APath::StaticClass()))
 		{
@@ -95,7 +95,6 @@ void AP_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAxis(TEXT("MoveHorizontal"), this, &AP_Player::MoveHorizontal);
 	PlayerInputComponent->BindAxis(TEXT("MoveVertical"), this, &AP_Player::MoveVertical);
 	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &AP_Player::TriggerOffensiveSkill);
-	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &AP_Player::StartTestMiniGame);
 }
 
 void AP_Player::Accelerator()
@@ -140,7 +139,7 @@ void AP_Player::Tick(float DeltaTime)
 	}
 
 	// 버프 스킬 자동 발동 처리 (스킬 자체 쿨다운에 의존)
-	TriggerBuffSkill();
+	UpdateAutoBuffSkill(DeltaTime);
 }
 
 void AP_Player::MoveHorizontal(float Value)
@@ -224,6 +223,24 @@ void AP_Player::TriggerBuffSkill()
 			Craft->TryActivateBuffSkill(nullptr);
 		}
 	}
+}
+
+void AP_Player::UpdateAutoBuffSkill(float DeltaTime)
+{
+	if (BuffAutoActivateInterval <= 0.0f)
+	{
+		TriggerBuffSkill();
+		return;
+	}
+
+	BuffAutoActivateTimer += DeltaTime;
+	if (BuffAutoActivateTimer < BuffAutoActivateInterval)
+	{
+		return;
+	}
+
+	BuffAutoActivateTimer = 0.0f;
+	TriggerBuffSkill();
 }
 
 void AP_Player::HandleSupportAutoFire()

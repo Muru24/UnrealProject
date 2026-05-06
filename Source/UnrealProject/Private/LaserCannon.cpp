@@ -42,7 +42,7 @@ void ALaserCannon::SetBeamTarget(AActor* InTarget)
 {
     if (LaserComponent)
     {
-        LaserComponent->StartLaser(InTarget);
+        LaserComponent->SetTargetActor(InTarget);
     }
 }
 

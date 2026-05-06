@@ -10,6 +10,49 @@ USnakeSkillManager::USnakeSkillManager()
     SkillAutoTriggerTimer = 10.0f;
 }
 
+void USnakeSkillManager::ApplyBossPhase(EBossEncounterPhase NewPhase)
+{
+    switch (NewPhase)
+    {
+    case EBossEncounterPhase::Intro:
+        SkillAutoTriggerDelay = 10.0f;
+        LaunchDelayBetweenParts = 0.25f;
+        FormationRadius = 450.0f;
+        LaserPrepareTime = 1.5f;
+        LaserDuration = 4.0f;
+        break;
+    case EBossEncounterPhase::Phase1:
+        SkillAutoTriggerDelay = 8.0f;
+        LaunchDelayBetweenParts = 0.2f;
+        FormationRadius = 425.0f;
+        LaserPrepareTime = 1.25f;
+        LaserDuration = 4.5f;
+        break;
+    case EBossEncounterPhase::Phase2:
+        SkillAutoTriggerDelay = 6.0f;
+        LaunchDelayBetweenParts = 0.16f;
+        FormationRadius = 375.0f;
+        LaserPrepareTime = 1.0f;
+        LaserDuration = 5.0f;
+        break;
+    case EBossEncounterPhase::Enraged:
+        SkillAutoTriggerDelay = 4.5f;
+        LaunchDelayBetweenParts = 0.12f;
+        FormationRadius = 325.0f;
+        LaserPrepareTime = 0.8f;
+        LaserDuration = 5.5f;
+        break;
+    case EBossEncounterPhase::Defeated:
+        bIsSkillActive = false;
+        CurrentSkillPhase = ESnakeSkillState::Idle;
+        return;
+    default:
+        break;
+    }
+
+    SkillAutoTriggerTimer = FMath::Min(SkillAutoTriggerTimer, SkillAutoTriggerDelay);
+}
+
 void USnakeSkillManager::Update(float DeltaTime, const TArray<UChildActorComponent*>& Segments)
 {
     ASnake_CompositeMaster* Master = Cast<ASnake_CompositeMaster>(GetOwner());

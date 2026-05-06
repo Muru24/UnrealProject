@@ -22,7 +22,11 @@ void UPathFollowerComponent::BeginPlay()
 
 	if (UStatComponent* OwnerStatComponent = GetOwner()->FindComponentByClass<UStatComponent>())
 	{
-		MoveSpeed = OwnerStatComponent->GetMoveSpeed();
+		const float OwnerMoveSpeed = OwnerStatComponent->GetMoveSpeed();
+		if (OwnerMoveSpeed > KINDA_SMALL_NUMBER)
+		{
+			MoveSpeed = OwnerMoveSpeed;
+		}
 	}
 
 	if (!TargetPathActor)
@@ -47,6 +51,11 @@ void UPathFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	}
 
 	const float TotalLength = Spline->GetSplineLength();
+	if (TotalLength <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
 	CurrentDistance += (MoveSpeed + Acceleration) * DeltaTime;
 
 	if (Spline->IsClosedLoop())
@@ -55,7 +64,7 @@ void UPathFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	}
 	else if (CurrentDistance > TotalLength)
 	{
-		CurrentDistance = 0.0f;
+		CurrentDistance = TotalLength;
 	}
 
 	const float LookAheadOffset = 200.0f;

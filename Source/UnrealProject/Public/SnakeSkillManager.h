@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "BossPhaseComponent.h"
 #include "SnakeSkillManager.generated.h"
 
 // 스킬 상태를 마스터와 공유하기 위한 열거형 (마스터 헤더에 있던 것 이동 가능)
@@ -32,6 +33,7 @@ public:
 
     // Getters
     bool IsSkillActive() const { return bIsSkillActive; }
+    void ApplyBossPhase(EBossEncounterPhase NewPhase);
 
     // 설정값들 (관리자로부터 전달받음)
     void SetConfig(float InAutoDelay, float InLaunchDelay, float InFormRadius)

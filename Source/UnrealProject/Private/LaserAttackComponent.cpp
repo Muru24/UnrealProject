@@ -1,171 +1,278 @@
 #include "LaserAttackComponent.h"
+
 #include "BeamEffectActor.h"
+#include "GameFramework/Pawn.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
 
 ULaserAttackComponent::ULaserAttackComponent()
 {
-    PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = true;
 }
 
 void ULaserAttackComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    StopLaser();
-    Super::EndPlay(EndPlayReason);
+	StopLaser();
+	Super::EndPlay(EndPlayReason);
 }
 
 void ULaserAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    if (bAttackActive && ActiveBeamActor)
-    {
-        if (!IsValid(TargetActor) && !IsValid(TargetComponent))
-        {
-            StopLaser();
-            return;
-        }
+	if (!bWarningActive && !bAttackActive)
+	{
+		return;
+	}
 
-        // 경과 시간 업데이트
-        AttackTimeTracker += DeltaTime;
-        
-        // 0.0 ~ 1.0 비율 계산
-        const float Alpha = AttackActiveDuration > 0.0f ? FMath::Clamp(AttackTimeTracker / AttackActiveDuration, 0.0f, 1.0f) : 0.0f;
-        
-        // 빔 굵기 보간
-        const float CurrentSize = FMath::Lerp(InitialBeamSize, FinalBeamSize, Alpha);
+	if (!IsValid(TargetActor) && !IsValid(TargetComponent))
+	{
+		StopLaser();
+		return;
+	}
 
-        FVector AimLocation = GetTargetLocationWithExtension();
-        ActiveBeamActor->SetActorLocation(GetFireOriginLocation());
-        ActiveBeamActor->SetBeamEnd(AimLocation, true);
-        ActiveBeamActor->SetBeamSize(CurrentSize, true);
+	const FVector AimLocation = GetTargetLocationWithExtension();
 
-        // 본체 회전 (주인이 액터일 경우 조준 지점 바라보기)
-        AActor* Owner = GetOwner();
-        if (Owner)
-        {
-            FVector Direction = AimLocation - Owner->GetActorLocation();
-            if (!Direction.IsNearlyZero())
-            {
-                Owner->SetActorRotation(Direction.Rotation());
-            }
-        }
-    }
+	if (bWarningActive)
+	{
+		if (!IsValid(ActiveBeamActor))
+		{
+			return;
+		}
+
+		WarningTimeTracker += DeltaTime;
+		const float WarningTimeRemaining = FMath::Max(0.0f, WarningDuration - WarningTimeTracker);
+		const bool bUseFinalPulse = WarningFinalPulseDuration > 0.0f && WarningTimeRemaining <= WarningFinalPulseDuration;
+		const FLinearColor CurrentWarningColor = bUseFinalPulse ? WarningFinalPulseColor : WarningBeamColor;
+		const float CurrentWarningSize = bUseFinalPulse
+			? WarningBeamSize * WarningFinalPulseSizeMultiplier
+			: WarningBeamSize;
+
+		ActiveBeamActor->SetActorLocation(GetFireOriginLocation());
+		ActiveBeamActor->SetBeamEnd(AimLocation, true);
+		ActiveBeamActor->SetMainColor(CurrentWarningColor, true);
+		ActiveBeamActor->SetBeamSize(CurrentWarningSize, true);
+	}
+	else if (bAttackActive)
+	{
+		if (!IsValid(ActiveBeamActor))
+		{
+			return;
+		}
+
+		AttackTimeTracker += DeltaTime;
+		CurrentBeamAimLocation = FMath::VInterpTo(CurrentBeamAimLocation, AimLocation, DeltaTime, AttackTrackingInterpSpeed);
+		ActiveBeamActor->SetActorLocation(GetFireOriginLocation());
+		ActiveBeamActor->SetBeamEnd(CurrentBeamAimLocation, true);
+
+		const float Alpha = AttackActiveDuration > 0.0f
+			? FMath::Clamp(AttackTimeTracker / AttackActiveDuration, 0.0f, 1.0f)
+			: 0.0f;
+		const float CurrentSize = FMath::Lerp(InitialBeamSize, FinalBeamSize, Alpha);
+
+		ActiveBeamActor->SetMainColor(AttackBeamColor, true);
+		ActiveBeamActor->SetBeamSize(CurrentSize, true);
+
+		if (AActor* Owner = GetOwner())
+		{
+			const FVector Direction = CurrentBeamAimLocation - Owner->GetActorLocation();
+			if (!Direction.IsNearlyZero())
+			{
+				Owner->SetActorRotation(Direction.Rotation());
+			}
+		}
+	}
 }
 
 void ULaserAttackComponent::StartLaser(AActor* InTarget)
 {
-    if (!InTarget) return;
+	if (!IsValid(InTarget))
+	{
+		return;
+	}
 
-    TargetActor = InTarget;
-    TargetComponent = nullptr;
-    AttackTimeTracker = 0.0f;
-    bAttackActive = true;
-
-    FireBeam();
-
-    // 공격 종료 타이머 설정 (0 이하일 경우 무한 지속)
-    if (AttackActiveDuration > 0.0f)
-    {
-        GetWorld()->GetTimerManager().SetTimer(
-            AttackStopTimerHandle,
-            this,
-            &ULaserAttackComponent::StopLaser,
-            AttackActiveDuration,
-            false);
-    }
+	SetTargetActor(InTarget);
+	BeginLaserWarning();
 }
 
 void ULaserAttackComponent::StartLaserFromComponent(USceneComponent* InTargetComponent)
 {
-    if (!InTargetComponent) return;
+	if (!IsValid(InTargetComponent))
+	{
+		return;
+	}
 
-    TargetComponent = InTargetComponent;
-    TargetActor = nullptr;
-    AttackTimeTracker = 0.0f;
-    bAttackActive = true;
-
-    FireBeam();
-
-    // 공격 종료 타이머 설정 (0 이하일 경우 무한 지속)
-    if (AttackActiveDuration > 0.0f)
-    {
-        GetWorld()->GetTimerManager().SetTimer(
-            AttackStopTimerHandle,
-            this,
-            &ULaserAttackComponent::StopLaser,
-            AttackActiveDuration,
-            false);
-    }
+	SetTargetComponent(InTargetComponent);
+	BeginLaserWarning();
 }
 
 void ULaserAttackComponent::StopLaser()
 {
-    GetWorld()->GetTimerManager().ClearTimer(AttackStopTimerHandle);
-    bAttackActive = false;
-    DeactivateActiveBeam();
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(WarningFinishTimerHandle);
+		World->GetTimerManager().ClearTimer(AttackStopTimerHandle);
+	}
+
+	bWarningActive = false;
+	bAttackActive = false;
+	AttackTimeTracker = 0.0f;
+	WarningTimeTracker = 0.0f;
+	CurrentBeamAimLocation = FVector::ZeroVector;
+	DeactivateActiveBeam();
+}
+
+void ULaserAttackComponent::SetTargetActor(AActor* InTargetActor)
+{
+	TargetActor = InTargetActor;
+	TargetComponent = nullptr;
+}
+
+void ULaserAttackComponent::SetTargetComponent(USceneComponent* InTargetComponent)
+{
+	TargetComponent = InTargetComponent;
+	TargetActor = nullptr;
 }
 
 void ULaserAttackComponent::FireBeam()
 {
-    if (!bAttackActive || (!IsValid(TargetActor) && !IsValid(TargetComponent)) || !BeamActorClass) return;
+	if ((!bWarningActive && !bAttackActive) || (!IsValid(TargetActor) && !IsValid(TargetComponent)) || !BeamActorClass)
+	{
+		return;
+	}
 
-    DeactivateActiveBeam();
+	if (!IsValid(ActiveBeamActor))
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = GetOwner();
+		SpawnParams.Instigator = Cast<APawn>(GetOwner());
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-    FActorSpawnParameters SpawnParams;
-    SpawnParams.Owner = GetOwner();
-    SpawnParams.Instigator = Cast<APawn>(GetOwner());
-    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		ActiveBeamActor = GetWorld()->SpawnActor<ABeamEffectActor>(
+			BeamActorClass,
+			GetFireOriginLocation(),
+			GetOwner() ? GetOwner()->GetActorRotation() : FRotator::ZeroRotator,
+			SpawnParams);
+	}
 
-    ActiveBeamActor = GetWorld()->SpawnActor<ABeamEffectActor>(
-        BeamActorClass,
-        GetFireOriginLocation(),
-        GetOwner()->GetActorRotation(),
-        SpawnParams);
+	if (!IsValid(ActiveBeamActor))
+	{
+		return;
+	}
 
-    if (ActiveBeamActor)
-    {
-        ActiveBeamActor->SetBeamEnd(GetTargetLocationWithExtension(), false);
-        ActiveBeamActor->SetBeamSize(InitialBeamSize, false);
-        ActiveBeamActor->ApplyBeamParameters();
-        ActiveBeamActor->ActivateBeam(true);
-    }
+	ActiveBeamActor->SetActorLocation(GetFireOriginLocation());
+	ActiveBeamActor->SetBeamEnd(GetTargetLocationWithExtension(), false);
+
+	if (bWarningActive)
+	{
+		ActiveBeamActor->SetMainColor(WarningBeamColor, false);
+		ActiveBeamActor->SetBeamSize(WarningBeamSize, false);
+	}
+	else
+	{
+		ActiveBeamActor->SetMainColor(AttackBeamColor, false);
+		ActiveBeamActor->SetBeamSize(InitialBeamSize, false);
+	}
+
+	ActiveBeamActor->ApplyBeamParameters();
+	ActiveBeamActor->ActivateBeam(true);
+}
+
+void ULaserAttackComponent::BeginLaserWarning()
+{
+	StopLaser();
+
+	if ((!IsValid(TargetActor) && !IsValid(TargetComponent)) || !BeamActorClass)
+	{
+		return;
+	}
+
+	bWarningActive = true;
+	AttackTimeTracker = 0.0f;
+	WarningTimeTracker = 0.0f;
+	CurrentBeamAimLocation = GetTargetLocationWithExtension();
+	FireBeam();
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			WarningFinishTimerHandle,
+			this,
+			&ULaserAttackComponent::BeginLaserFiring,
+			FMath::Max(0.0f, WarningDuration),
+			false);
+	}
+}
+
+void ULaserAttackComponent::BeginLaserFiring()
+{
+	if (!bWarningActive)
+	{
+		return;
+	}
+
+	if (!IsValid(TargetActor) && !IsValid(TargetComponent))
+	{
+		StopLaser();
+		return;
+	}
+
+	bWarningActive = false;
+	bAttackActive = true;
+	AttackTimeTracker = 0.0f;
+	CurrentBeamAimLocation = GetTargetLocationWithExtension();
+	FireBeam();
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(AttackStopTimerHandle);
+
+		if (AttackActiveDuration > 0.0f)
+		{
+			World->GetTimerManager().SetTimer(
+				AttackStopTimerHandle,
+				this,
+				&ULaserAttackComponent::StopLaser,
+				AttackActiveDuration,
+				false);
+		}
+	}
 }
 
 void ULaserAttackComponent::DeactivateActiveBeam()
 {
-    if (ActiveBeamActor)
-    {
-        ActiveBeamActor->DeactivateBeam();
-        ActiveBeamActor->Destroy();
-        ActiveBeamActor = nullptr;
-    }
+	if (ActiveBeamActor)
+	{
+		ActiveBeamActor->DeactivateBeam();
+		ActiveBeamActor->Destroy();
+		ActiveBeamActor = nullptr;
+	}
 }
 
 FVector ULaserAttackComponent::GetTargetLocationWithExtension() const
 {
-    FVector TargetLoc = FVector::ZeroVector;
-    
-    if (IsValid(TargetComponent))
-    {
-        TargetLoc = TargetComponent->GetComponentLocation();
-    }
-    else if (IsValid(TargetActor))
-    {
-        TargetLoc = TargetActor->GetActorLocation();
-    }
-    else
-    {
-        return FVector::ZeroVector;
-    }
+	FVector TargetLoc = FVector::ZeroVector;
 
-    const FVector Origin = GetFireOriginLocation();
-    const FVector Direction = (TargetLoc - Origin).GetSafeNormal();
+	if (IsValid(TargetComponent))
+	{
+		TargetLoc = TargetComponent->GetComponentLocation();
+	}
+	else if (IsValid(TargetActor))
+	{
+		TargetLoc = TargetActor->GetActorLocation();
+	}
+	else
+	{
+		return FVector::ZeroVector;
+	}
 
-    return TargetLoc + (Direction * BeamExtraDistance);
+	const FVector Origin = GetFireOriginLocation();
+	const FVector Direction = (TargetLoc - Origin).GetSafeNormal();
+
+	return TargetLoc + (Direction * BeamExtraDistance);
 }
 
 FVector ULaserAttackComponent::GetFireOriginLocation() const
 {
-    return FireOrigin ? FireOrigin->GetComponentLocation() : GetOwner()->GetActorLocation();
+	return FireOrigin ? FireOrigin->GetComponentLocation() : (GetOwner() ? GetOwner()->GetActorLocation() : FVector::ZeroVector);
 }

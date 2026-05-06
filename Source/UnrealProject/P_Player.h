@@ -72,6 +72,7 @@ protected:
 	void SwapSquadRight();
 	void TriggerOffensiveSkill();
 	void TriggerBuffSkill();
+	void UpdateAutoBuffSkill(float DeltaTime);
 	void HandleSupportAutoFire();
 	ASquadCraftActor* GetActiveCraft() const;
 
@@ -85,5 +86,10 @@ public:
 protected:
     UPROPERTY(BlueprintReadOnly, Category = "Skill")
     TArray<AActor*> SkillTargetEnemies;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill|AutoBuff", meta = (ClampMin = "0.0"))
+	float BuffAutoActivateInterval = 0.25f;
+
+	float BuffAutoActivateTimer = 0.0f;
 
 };

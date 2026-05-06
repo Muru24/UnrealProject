@@ -1,29 +1,59 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ChildActorComponent.h"
+#include "GameFramework/Actor.h"
 #include "Pawn_CompositeMaster.generated.h"
 
-/**
- * 
- */
+class UChildActorComponent;
+class UChildActorPartsComponent;
+class UBossPartPatternCoordinatorComponent;
+class UBossPatternSchedulerComponent;
+class UBossSupportPartOrbitComponent;
+class ABossCore;
+class ABossOutPart;
+
 UCLASS()
 class UNREALPROJECT_API APawn_CompositeMaster : public AActor
 {
 	GENERATED_BODY()
-	
+
 public:
 	APawn_CompositeMaster();
 
 	virtual void Tick(float DeltaTime) override;
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, Category = "Components")
+	UFUNCTION(BlueprintCallable, Category = "Composite")
+	void GetChildPartActors(TArray<AActor*>& OutChildPartActors) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Composite")
+	void GetChildPartComponents(TArray<UChildActorComponent*>& OutChildPartComponents) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Composite")
+	void GetSupportPartActors(TArray<AActor*>& OutSupportPartActors) const;
+
+	UFUNCTION(BlueprintPure, Category = "Composite")
+	ABossCore* GetBossCore() const;
+
+	UFUNCTION(BlueprintPure, Category = "Composite")
+	UBossPartPatternCoordinatorComponent* GetBossPartPatternCoordinatorComponent() const { return BossPartPatternCoordinatorComponent; }
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USceneComponent> SceneRoot;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UChildActorPartsComponent> ChildActorPartsComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UBossPartPatternCoordinatorComponent> BossPartPatternCoordinatorComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UBossPatternSchedulerComponent> BossPatternSchedulerComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UBossSupportPartOrbitComponent> BossSupportPartOrbitComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TArray<UChildActorComponent*> ChildParts;
-
-	UPROPERTY(VisibleAnywhere)
-	USceneComponent* SceneRoot;
-
 };
