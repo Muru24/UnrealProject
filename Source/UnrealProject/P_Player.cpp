@@ -15,6 +15,7 @@
 #include "SquadRuntimeComponent.h"
 #include "StatComponent.h"
 #include "SupportFireComponent.h"
+#include "HUDManager.h"
 #include "InputCoreTypes.h"
 
 AP_Player::AP_Player()
@@ -94,7 +95,7 @@ void AP_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAxis(TEXT("MoveHorizontal"), this, &AP_Player::MoveHorizontal);
 	PlayerInputComponent->BindAxis(TEXT("MoveVertical"), this, &AP_Player::MoveVertical);
 	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &AP_Player::TriggerOffensiveSkill);
-	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &AP_Player::TriggerBuffSkill);
+	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &AP_Player::StartTestMiniGame);
 }
 
 void AP_Player::Accelerator()
@@ -137,6 +138,9 @@ void AP_Player::Tick(float DeltaTime)
 			PlayerCameraRigComponent->UpdateCameraPan(PlayerController, SpringArm, DeltaTime);
 		}
 	}
+
+	// 버프 스킬 자동 발동 처리 (스킬 자체 쿨다운에 의존)
+	TriggerBuffSkill();
 }
 
 void AP_Player::MoveHorizontal(float Value)
@@ -205,13 +209,21 @@ void AP_Player::TriggerOffensiveSkill()
 
 void AP_Player::TriggerBuffSkill()
 {
-	ASquadCraftActor* ActiveCraft = GetActiveCraft();
-	if (!ActiveCraft)
+	if (!SquadRuntimeComponent)
 	{
 		return;
 	}
 
-	ActiveCraft->TryActivateBuffSkill(nullptr);
+	TArray<ASquadCraftActor*> AllCrafts;
+	SquadRuntimeComponent->GetAllCrafts(AllCrafts);
+
+	for (ASquadCraftActor* Craft : AllCrafts)
+	{
+		if (Craft)
+		{
+			Craft->TryActivateBuffSkill(nullptr);
+		}
+	}
 }
 
 void AP_Player::HandleSupportAutoFire()
@@ -229,4 +241,16 @@ void AP_Player::HandleSupportAutoFire()
 ASquadCraftActor* AP_Player::GetActiveCraft() const
 {
 	return SquadRuntimeComponent ? SquadRuntimeComponent->GetActiveCraft(SquadComponent) : nullptr;
+}
+
+void AP_Player::StartTestMiniGame()
+{
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (AHUDManager* HUD = Cast<AHUDManager>(PC->GetHUD()))
+		{
+			// 테스트를 위해 10개의 타겟을 생성하는 미니게임 실행
+			HUD->StartTargetMiniGame(10);
+		}
+	}
 }

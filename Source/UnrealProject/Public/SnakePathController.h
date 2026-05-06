@@ -12,10 +12,8 @@ class UNREALPROJECT_API USnakePathController : public UActorComponent
 public:
     USnakePathController();
 
-    // 매 프레임 경로 상태 업데이트 (중심점 추적, 궤도면 전환 등)
     void UpdatePath(float DeltaTime, AActor* CenterActor, bool bPaused);
 
-    // Getters
     FVector GetCurrentCenterLocation() const { return CurrentCenterLocation; }
     FRotator GetSourceOrbitRotation() const { return SourceOrbitRotation; }
     FRotator GetTargetOrbitRotation() const { return TargetOrbitRotation; }

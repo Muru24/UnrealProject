@@ -62,6 +62,7 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 
 	void Accelerator();
+	void StartTestMiniGame();
 
 	virtual void Fire() override;
 	virtual void Tick(float DeltaTime) override;

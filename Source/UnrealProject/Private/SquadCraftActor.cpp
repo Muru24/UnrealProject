@@ -143,7 +143,6 @@ bool ASquadCraftActor::TryActivateOffensiveSkill(AActor* TargetActor)
 
 bool ASquadCraftActor::TryActivateBuffSkill(AActor* TargetActor)
 {
-	return bIsActiveCraft && SkillComponent
-		? SkillComponent->TryActivateBuffSkill(TargetActor)
-		: false;
+	// 버프 스킬은 기체의 활성화 여부와 관계없이 사용할 수 있도록 수정 (자동 발동 대응)
+	return SkillComponent ? SkillComponent->TryActivateBuffSkill(TargetActor) : false;
 }
