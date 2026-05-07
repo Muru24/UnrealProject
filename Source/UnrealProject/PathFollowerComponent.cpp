@@ -8,6 +8,7 @@
 UPathFollowerComponent::UPathFollowerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+
 }
 
 void UPathFollowerComponent::SetAcceleration(float Value)
@@ -33,11 +34,13 @@ void UPathFollowerComponent::BeginPlay()
 	{
 		TargetPathActor = UGameplayStatics::GetActorOfClass(GetWorld(), APath::StaticClass());
 	}
+
 }
 
 void UPathFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	UE_LOG(LogTemp, Warning, TEXT("BeginPlay"));
 
 	if (!TargetPathActor)
 	{

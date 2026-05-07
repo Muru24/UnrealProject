@@ -80,6 +80,8 @@ void AP_Player::BeginPlay()
 	{
 		PlayerCameraRigComponent->UpdateCameraAnchor(SpringArm, GetActiveCraft(), true);
 	}
+
+
 }
 
 void AP_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
