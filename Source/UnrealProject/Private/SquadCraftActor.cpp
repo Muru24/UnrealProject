@@ -20,6 +20,7 @@ ASquadCraftActor::ASquadCraftActor()
 	CollisionComponent->SetSphereRadius(90.0f);
 	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CollisionComponent->SetCollisionProfileName(TEXT("Pawn"));
+	CollisionComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 
 	VisualRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VisualRoot"));
 	VisualRoot->SetupAttachment(SceneRoot);

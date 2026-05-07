@@ -56,7 +56,18 @@ void UPlayerCameraRigComponent::UpdateCameraAnchor(USpringArmComponent* SpringAr
 		return;
 	}
 
-	const FVector TargetLocation = ActiveCraft ? ActiveCraft->GetCurrentRelativeLocation() : FVector::ZeroVector;
+	const FVector CraftLocation = ActiveCraft ? ActiveCraft->GetCurrentRelativeLocation() : FVector::ZeroVector;
+	if (!bHasCachedBaseArmLocation)
+	{
+		CachedBaseArmLocation = SpringArmComponent->GetRelativeLocation();
+		bHasCachedBaseArmLocation = true;
+	}
+
+	const FVector AnchorOffset(
+		CraftLocation.X * CameraAnchorInfluence.X,
+		CraftLocation.Y * CameraAnchorInfluence.Y,
+		CraftLocation.Z * CameraAnchorInfluence.Z);
+	const FVector TargetLocation = CachedBaseArmLocation + AnchorOffset;
 
 	if (bSnapToTarget)
 	{

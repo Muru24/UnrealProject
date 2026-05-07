@@ -29,6 +29,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float CameraAnchorFollowSpeed = 10.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
+	FVector CameraAnchorInfluence = FVector(0.0f, 0.35f, 0.25f);
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Zoom")
 	float AccelerationZoomOutDistance = 80.0f;
 
@@ -40,4 +43,6 @@ protected:
 
 private:
 	mutable float CachedBaseArmLength = -1.0f;
+	mutable FVector CachedBaseArmLocation = FVector::ZeroVector;
+	mutable bool bHasCachedBaseArmLocation = false;
 };
