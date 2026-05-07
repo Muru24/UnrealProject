@@ -1,6 +1,7 @@
 #include "P_Player.h"
 
 #include "Camera/CameraComponent.h"
+#include "Components/SphereComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "LockOnComponent.h"
@@ -70,10 +71,25 @@ void AP_Player::BeginPlay()
 		PlaneMesh->SetVisibility(false);
 	}
 
+	if (CollisionComponent)
+	{
+		CollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
 	if (SquadRuntimeComponent)
 	{
 		SquadRuntimeComponent->SpawnCrafts(this, SquadComponent, PlaneMesh);
 		SquadRuntimeComponent->RefreshCraftStates(SquadComponent);
+
+		TArray<ASquadCraftActor*> AllCrafts;
+		SquadRuntimeComponent->GetAllCrafts(AllCrafts);
+		for (ASquadCraftActor* Craft : AllCrafts)
+		{
+			if (Craft)
+			{
+				Craft->OnCraftDefeated.AddUObject(this, &AP_Player::HandleSquadCraftDefeated);
+			}
+		}
 	}
 
 	if (PlayerCameraRigComponent)
@@ -164,7 +180,14 @@ void AP_Player::SwapSquadLeft()
 {
 	if (SquadComponent)
 	{
-		SquadComponent->ShiftActiveSlotLeft();
+		for (int32 Attempt = 0; Attempt < 3; ++Attempt)
+		{
+			SquadComponent->ShiftActiveSlotLeft();
+			if (GetActiveCraft())
+			{
+				break;
+			}
+		}
 	}
 
 	if (SquadRuntimeComponent)
@@ -182,7 +205,14 @@ void AP_Player::SwapSquadRight()
 {
 	if (SquadComponent)
 	{
-		SquadComponent->ShiftActiveSlotRight();
+		for (int32 Attempt = 0; Attempt < 3; ++Attempt)
+		{
+			SquadComponent->ShiftActiveSlotRight();
+			if (GetActiveCraft())
+			{
+				break;
+			}
+		}
 	}
 
 	if (SquadRuntimeComponent)
@@ -260,6 +290,31 @@ void AP_Player::HandleSupportAutoFire()
 ASquadCraftActor* AP_Player::GetActiveCraft() const
 {
 	return SquadRuntimeComponent ? SquadRuntimeComponent->GetActiveCraft(SquadComponent) : nullptr;
+}
+
+void AP_Player::HandleSquadCraftDefeated(ASquadCraftActor* DefeatedCraft)
+{
+	if (!SquadRuntimeComponent || !SquadComponent || !DefeatedCraft)
+	{
+		return;
+	}
+
+	if (!GetActiveCraft())
+	{
+		SquadRuntimeComponent->SelectFirstOperationalCraft(SquadComponent);
+	}
+
+	SquadRuntimeComponent->RefreshCraftStates(SquadComponent);
+
+	if (PlayerCameraRigComponent)
+	{
+		PlayerCameraRigComponent->UpdateCameraAnchor(SpringArm, GetActiveCraft(), false);
+	}
+
+	if (!SquadRuntimeComponent->HasOperationalCrafts() && StatComponent)
+	{
+		StatComponent->ApplyDamage(999999.0f);
+	}
 }
 
 void AP_Player::StartTestMiniGame()

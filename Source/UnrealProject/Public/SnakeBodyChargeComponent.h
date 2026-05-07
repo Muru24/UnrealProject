@@ -35,6 +35,7 @@ public:
     void PrepareLaser(AActor* InTarget, const FVector& InFormLoc, const FRotator& InFormRot);
     void FireLaser();
     void StopLaser();
+    void CancelSkillSequence();
 
     // 발사 시작 신호
     void SignalLaunch() { bLaunchSignaled = true; }

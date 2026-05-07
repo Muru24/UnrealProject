@@ -77,7 +77,7 @@ void USquadRuntimeComponent::RefreshCraftStates(const USquadComponent* SquadLogi
 	{
 		if (ASquadCraftActor* Craft = GetCraftForSlot(Slot))
 		{
-			const bool bIsCraftActive = Slot == SquadLogic->GetActiveSlot();
+			const bool bIsCraftActive = IsCraftOperational(Craft) && Slot == SquadLogic->GetActiveSlot();
 			const FRotator TargetRotation = bIsCraftActive ? Craft->GetCurrentRelativeRotation() : FRotator::ZeroRotator;
 			Craft->SetActiveCraft(bIsCraftActive);
 			Craft->SetDesiredRelativeTransform(SquadLogic->GetSlotOffset(Slot), TargetRotation);
@@ -137,7 +137,13 @@ ASquadCraftActor* USquadRuntimeComponent::GetCraftForSlot(ESquadSlot Slot) const
 
 ASquadCraftActor* USquadRuntimeComponent::GetActiveCraft(const USquadComponent* SquadLogic) const
 {
-	return SquadLogic ? GetCraftForSlot(SquadLogic->GetActiveSlot()) : nullptr;
+	if (!SquadLogic)
+	{
+		return nullptr;
+	}
+
+	ASquadCraftActor* ActiveCraft = GetCraftForSlot(SquadLogic->GetActiveSlot());
+	return IsCraftOperational(ActiveCraft) ? ActiveCraft : nullptr;
 }
 
 void USquadRuntimeComponent::GetAllCrafts(TArray<ASquadCraftActor*>& OutCrafts) const
@@ -147,6 +153,37 @@ void USquadRuntimeComponent::GetAllCrafts(TArray<ASquadCraftActor*>& OutCrafts) 
 	OutCrafts.Add(LeftCraft);
 	OutCrafts.Add(CenterCraft);
 	OutCrafts.Add(RightCraft);
+}
+
+bool USquadRuntimeComponent::SelectFirstOperationalCraft(USquadComponent* SquadLogic) const
+{
+	if (!SquadLogic)
+	{
+		return false;
+	}
+
+	constexpr ESquadSlot PreferredSlots[] =
+	{
+		ESquadSlot::Center,
+		ESquadSlot::Left,
+		ESquadSlot::Right
+	};
+
+	for (ESquadSlot Slot : PreferredSlots)
+	{
+		if (IsCraftOperational(GetCraftForSlot(Slot)))
+		{
+			SquadLogic->SetActiveSlotDirect(Slot);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool USquadRuntimeComponent::HasOperationalCrafts() const
+{
+	return IsCraftOperational(LeftCraft) || IsCraftOperational(CenterCraft) || IsCraftOperational(RightCraft);
 }
 
 void USquadRuntimeComponent::InitializeCraftVisual(ASquadCraftActor* Craft, UStaticMeshComponent* FallbackMesh) const
@@ -165,4 +202,9 @@ void USquadRuntimeComponent::InitializeCraftVisual(ASquadCraftActor* Craft, USta
 	{
 		Craft->GetCraftMesh()->SetMaterial(MaterialIndex, FallbackMesh->GetMaterial(MaterialIndex));
 	}
+}
+
+bool USquadRuntimeComponent::IsCraftOperational(const ASquadCraftActor* Craft) const
+{
+	return IsValid(Craft) && Craft->IsOperational();
 }

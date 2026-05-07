@@ -1,10 +1,12 @@
 #include "SquadCraftActor.h"
 
 #include "Components/SceneComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "CraftAttackComponent.h"
 #include "CraftLoadoutComponent.h"
 #include "SkillComponent.h"
+#include "StatComponent.h"
 
 ASquadCraftActor::ASquadCraftActor()
 {
@@ -12,6 +14,12 @@ ASquadCraftActor::ASquadCraftActor()
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
+
+	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
+	CollisionComponent->SetupAttachment(SceneRoot);
+	CollisionComponent->SetSphereRadius(90.0f);
+	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	CollisionComponent->SetCollisionProfileName(TEXT("Pawn"));
 
 	VisualRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VisualRoot"));
 	VisualRoot->SetupAttachment(SceneRoot);
@@ -29,11 +37,17 @@ ASquadCraftActor::ASquadCraftActor()
 	AttackComponent = CreateDefaultSubobject<UCraftAttackComponent>(TEXT("AttackComponent"));
 	LoadoutComponent = CreateDefaultSubobject<UCraftLoadoutComponent>(TEXT("LoadoutComponent"));
 	SkillComponent = CreateDefaultSubobject<USkillComponent>(TEXT("SkillComponent"));
+	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
 }
 
 void ASquadCraftActor::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (StatComponent)
+	{
+		StatComponent->OnHpChanged.AddDynamic(this, &ASquadCraftActor::HandleHpChanged);
+	}
 
 	ApplyLoadout();
 
@@ -59,6 +73,11 @@ void ASquadCraftActor::BeginPlay()
 void ASquadCraftActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (bCraftDefeated)
+	{
+		return;
+	}
 
 	if (GetRootComponent())
 	{
@@ -124,25 +143,56 @@ FVector ASquadCraftActor::GetCurrentRelativeLocation() const
 
 bool ASquadCraftActor::FireAt(const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn)
 {
-	return AttackComponent ? AttackComponent->FireFromOrigin(FireOrigin, TargetPoint, TargetActor, InstigatorPawn) : false;
+	return !bCraftDefeated && AttackComponent
+		? AttackComponent->FireFromOrigin(FireOrigin, TargetPoint, TargetActor, InstigatorPawn)
+		: false;
 }
 
 bool ASquadCraftActor::TryAutoFireAt(const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn)
 {
-	return !bIsActiveCraft && AttackComponent
+	return !bCraftDefeated && !bIsActiveCraft && AttackComponent
 		? AttackComponent->TryAutoFireFromOrigin(FireOrigin, TargetPoint, TargetActor, InstigatorPawn)
 		: false;
 }
 
 bool ASquadCraftActor::TryActivateOffensiveSkill(AActor* TargetActor)
 {
-	return bIsActiveCraft && SkillComponent
+	return !bCraftDefeated && bIsActiveCraft && SkillComponent
 		? SkillComponent->TryActivateOffensiveSkill(TargetActor)
 		: false;
 }
 
 bool ASquadCraftActor::TryActivateBuffSkill(AActor* TargetActor)
 {
-	// 버프 스킬은 기체의 활성화 여부와 관계없이 사용할 수 있도록 수정 (자동 발동 대응)
-	return SkillComponent ? SkillComponent->TryActivateBuffSkill(TargetActor) : false;
+	return !bCraftDefeated && SkillComponent ? SkillComponent->TryActivateBuffSkill(TargetActor) : false;
+}
+
+void ASquadCraftActor::HandleHpChanged(float CurrentHp)
+{
+	if (!bCraftDefeated && CurrentHp <= 0.0f)
+	{
+		HandleCraftDefeated();
+	}
+}
+
+void ASquadCraftActor::HandleCraftDefeated()
+{
+	if (bCraftDefeated)
+	{
+		return;
+	}
+
+	bCraftDefeated = true;
+	bIsActiveCraft = false;
+
+	if (CollisionComponent)
+	{
+		CollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
+
+	OnCraftDefeated.Broadcast(this);
 }

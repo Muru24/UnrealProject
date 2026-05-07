@@ -106,6 +106,7 @@ protected:
 	TObjectPtr<USceneComponent> FireOrigin;
 
 	FVector CurrentBeamAimLocation = FVector::ZeroVector;
+	bool bHasLockedAimLocation = false;
 
 	FTimerHandle AttackStopTimerHandle;
 	FTimerHandle WarningFinishTimerHandle;
@@ -114,6 +115,7 @@ protected:
 	void BeginLaserWarning();
 	void BeginLaserFiring();
 	void DeactivateActiveBeam();
+	FVector ResolveCurrentAimLocation() const;
 	FVector GetTargetLocationWithExtension() const;
 	FVector GetFireOriginLocation() const;
 };

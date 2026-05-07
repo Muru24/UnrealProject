@@ -7,6 +7,7 @@
 class AActor;
 class ABossOutPart;
 class UBossOutPartPatternComponent;
+enum class EBossOutPartPatternType : uint8;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class UNREALPROJECT_API UBossPartPatternCoordinatorComponent : public UActorComponent
@@ -29,6 +30,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Boss|Pattern")
 	ABossOutPart* GetActivePatternPart() const { return ActivePatternPart; }
+
+	UFUNCTION(BlueprintPure, Category = "Boss|Pattern")
+	EBossOutPartPatternType GetActivePatternType() const;
 
 private:
 	UPROPERTY()

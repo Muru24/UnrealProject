@@ -72,6 +72,13 @@ bool UBossPartPatternCoordinatorComponent::CanExecutePattern(ABossOutPart* Targe
 	return TargetPart && (!ActivePatternComponent || ActivePatternPart == TargetPart);
 }
 
+EBossOutPartPatternType UBossPartPatternCoordinatorComponent::GetActivePatternType() const
+{
+	return ActivePatternComponent
+		? ActivePatternComponent->GetPatternType()
+		: EBossOutPartPatternType::Laser;
+}
+
 void UBossPartPatternCoordinatorComponent::SetActivePattern(ABossOutPart* TargetPart, UBossOutPartPatternComponent* PatternComponent)
 {
 	if (!PatternComponent)

@@ -22,6 +22,8 @@ public:
 	ASquadCraftActor* GetCraftForSlot(ESquadSlot Slot) const;
 	ASquadCraftActor* GetActiveCraft(const USquadComponent* SquadLogic) const;
 	void GetAllCrafts(TArray<ASquadCraftActor*>& OutCrafts) const;
+	bool SelectFirstOperationalCraft(USquadComponent* SquadLogic) const;
+	bool HasOperationalCrafts() const;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Squad")
@@ -50,4 +52,5 @@ protected:
 
 private:
 	void InitializeCraftVisual(ASquadCraftActor* Craft, UStaticMeshComponent* FallbackMesh) const;
+	bool IsCraftOperational(const ASquadCraftActor* Craft) const;
 };

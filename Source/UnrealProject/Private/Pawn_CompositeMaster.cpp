@@ -1,12 +1,16 @@
 #include "Pawn_CompositeMaster.h"
 
+#include "BossOutPartPatternComponent.h"
 #include "BossCore.h"
 #include "BossOutPart.h"
 #include "BossPartPatternCoordinatorComponent.h"
 #include "BossPatternSchedulerComponent.h"
 #include "BossSupportPartOrbitComponent.h"
+#include "BulletBase.h"
 #include "ChildActorPartsComponent.h"
 #include "Components/ChildActorComponent.h"
+#include "EngineUtils.h"
+#include "SnakeBodyChargeComponent.h"
 
 APawn_CompositeMaster::APawn_CompositeMaster()
 {
@@ -101,4 +105,74 @@ ABossCore* APawn_CompositeMaster::GetBossCore() const
 	}
 
 	return nullptr;
+}
+
+void APawn_CompositeMaster::StopAllBossCombat()
+{
+	if (BossPartPatternCoordinatorComponent)
+	{
+		BossPartPatternCoordinatorComponent->StopCurrentPattern();
+	}
+
+	if (BossPatternSchedulerComponent)
+	{
+		BossPatternSchedulerComponent->SetAutoPatternEnabled(false);
+		BossPatternSchedulerComponent->SetComponentTickEnabled(false);
+	}
+
+	if (BossSupportPartOrbitComponent)
+	{
+		BossSupportPartOrbitComponent->SetComponentTickEnabled(false);
+	}
+
+	TArray<AActor*> ChildPartActors;
+	GetChildPartActors(ChildPartActors);
+	for (AActor* ChildPartActor : ChildPartActors)
+	{
+		if (!IsValid(ChildPartActor))
+		{
+			continue;
+		}
+
+		if (UBossOutPartPatternComponent* BossOutPartPatternComponent = ChildPartActor->FindComponentByClass<UBossOutPartPatternComponent>())
+		{
+			BossOutPartPatternComponent->StopActivePattern();
+			BossOutPartPatternComponent->SetComponentTickEnabled(false);
+		}
+
+		if (USnakeBodyChargeComponent* SnakeBodyChargeComponent = ChildPartActor->FindComponentByClass<USnakeBodyChargeComponent>())
+		{
+			SnakeBodyChargeComponent->CancelSkillSequence();
+			SnakeBodyChargeComponent->SetComponentTickEnabled(false);
+		}
+
+		ChildPartActor->SetActorTickEnabled(false);
+	}
+
+	if (!GetWorld())
+	{
+		return;
+	}
+
+	TArray<ABulletBase*> ActiveBullets;
+	for (TActorIterator<ABulletBase> BulletIterator(GetWorld()); BulletIterator; ++BulletIterator)
+	{
+		if (ABulletBase* BulletActor = *BulletIterator)
+		{
+			ActiveBullets.Add(BulletActor);
+		}
+	}
+
+	for (ABulletBase* BulletActor : ActiveBullets)
+	{
+		if (IsValid(BulletActor))
+		{
+			BulletActor->Destroy();
+		}
+	}
+}
+
+void APawn_CompositeMaster::RequestCombatRestartSequence()
+{
+	ReceiveCombatRestartSequenceRequested();
 }

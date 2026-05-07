@@ -2,12 +2,12 @@
 
 
 #include "P_Enemy.h"
+#include "EnemyRushComponent.h"
 #include "EnemyManager.h"
-#include "UnrealProject/PathFollowerComponent.h"
 
 AP_Enemy::AP_Enemy()
 {
-    PathFollower = CreateDefaultSubobject<UPathFollowerComponent>(TEXT("PathFollowerComp"));
+    EnemyRushComponent = CreateDefaultSubobject<UEnemyRushComponent>(TEXT("EnemyRushComp"));
 }
 
 void AP_Enemy::BeginPlay()

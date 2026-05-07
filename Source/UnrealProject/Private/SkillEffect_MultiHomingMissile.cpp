@@ -86,6 +86,18 @@ bool USkillEffect_MultiHomingMissile::ActivateSkill_Implementation(AActor* Sourc
             }
         }
 
+        BarrageManager->ConfigureMissiles(
+            MissileMoveSpeed,
+            MissileMaxSpeed,
+            MissileTurnInterpSpeed,
+            MissileHitPoints,
+            bMissilesCanBeShotDown,
+            MissileInitialFireDelay,
+            MissileLaunchSpreadAngleDegrees,
+            MissileLaunchPitchSpreadAngleDegrees,
+            MissileHomingActivationDelay,
+            MissileSpeedRampDelay,
+            MissileSpeedRampInterpSpeed);
         BarrageManager->Init(SelectedTargets, ProjectileClass, FireInterval);
         return true;
     }

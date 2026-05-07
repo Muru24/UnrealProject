@@ -29,6 +29,10 @@ ABulletBase::ABulletBase()
 void ABulletBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+    CurrentHitPoints = FMath::Max(0.0f, MaxHitPoints);
+    CurrentMoveSpeed = FMath::Max(0.0f, Speed);
+    SpeedRampElapsedTime = 0.0f;
 	
     if (BulletVisualEffect && SelectedEffect)
     {
@@ -44,10 +48,40 @@ void ABulletBase::ConfigureAttackType(EBulletAttackType InAttackType, int32 InRe
     ExplosionRadius = FMath::Max(0.0f, InExplosionRadius);
 }
 
+void ABulletBase::SetProjectileSpeed(float InSpeed, float InMaxSpeed)
+{
+    Speed = FMath::Max(0.0f, InSpeed);
+    MaxSpeed = FMath::Max(Speed, InMaxSpeed);
+    CurrentMoveSpeed = Speed;
+}
+
+void ABulletBase::ConfigureSpeedRamp(float InSpeedRampDelay, float InSpeedRampInterpSpeed)
+{
+    SpeedRampDelay = FMath::Max(0.0f, InSpeedRampDelay);
+    SpeedRampInterpSpeed = FMath::Max(0.0f, InSpeedRampInterpSpeed);
+    SpeedRampElapsedTime = 0.0f;
+}
+
+void ABulletBase::ConfigureShotDown(float InMaxHitPoints, bool bInCanBeShotDown)
+{
+    bCanBeShotDown = bInCanBeShotDown;
+    MaxHitPoints = FMath::Max(0.0f, InMaxHitPoints);
+    CurrentHitPoints = MaxHitPoints;
+}
+
 void ABulletBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
     HandleLifeTime(DeltaTime);
+
+    if (CurrentMoveSpeed < MaxSpeed && SpeedRampInterpSpeed > 0.0f)
+    {
+        SpeedRampElapsedTime += DeltaTime;
+        if (SpeedRampElapsedTime >= SpeedRampDelay)
+        {
+            CurrentMoveSpeed = FMath::FInterpTo(CurrentMoveSpeed, MaxSpeed, DeltaTime, SpeedRampInterpSpeed);
+        }
+    }
 
 }
 
@@ -135,6 +169,20 @@ bool ABulletBase::ApplyDamageToActor(AActor* TargetActorToDamage)
         return false;
     }
 
+    if (ABulletBase* TargetBullet = Cast<ABulletBase>(TargetActorToDamage))
+    {
+        if (!TargetBullet->CanBeShotDown())
+        {
+            return false;
+        }
+
+        if (TargetBullet->ApplyBulletDamage(Damage))
+        {
+            DamagedActors.Add(TargetActorToDamage);
+            return true;
+        }
+    }
+
     if (UStatComponent* TargetStatComponent = TargetActorToDamage->FindComponentByClass<UStatComponent>())
     {
         TargetStatComponent->ApplyDamage(Damage);
@@ -143,6 +191,26 @@ bool ABulletBase::ApplyDamageToActor(AActor* TargetActorToDamage)
     }
 
     return false;
+}
+
+bool ABulletBase::ApplyBulletDamage(float DamageAmount)
+{
+    if (!bCanBeShotDown || DamageAmount <= 0.0f)
+    {
+        return false;
+    }
+
+    CurrentHitPoints = FMath::Clamp(CurrentHitPoints - DamageAmount, 0.0f, MaxHitPoints);
+    if (CurrentHitPoints <= 0.0f)
+    {
+        if (HitEffect)
+        {
+            UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitEffect, GetActorLocation());
+        }
+        Destroy();
+    }
+
+    return true;
 }
 
 void ABulletBase::ApplyExplosionDamage(const FVector& ImpactLocation, AActor* DirectHitActor)
@@ -187,9 +255,17 @@ void ABulletBase::ApplyExplosionDamage(const FVector& ImpactLocation, AActor* Di
 
 bool ABulletBase::CanAffectActor(AActor* OtherActor) const
 {
-    if (!OtherActor || OtherActor == this || OtherActor->IsA<ABulletBase>())
+    if (!OtherActor || OtherActor == this)
     {
         return false;
+    }
+
+    if (const ABulletBase* OtherBullet = Cast<ABulletBase>(OtherActor))
+    {
+        if (!OtherBullet->CanBeShotDown())
+        {
+            return false;
+        }
     }
 
     AActor* MyOwner = GetOwner();

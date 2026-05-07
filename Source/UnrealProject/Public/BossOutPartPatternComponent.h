@@ -48,6 +48,18 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Boss|OutPart|Pattern")
 	bool IsPatternActive() const { return bPatternActive; }
 
+	UFUNCTION(BlueprintPure, Category = "Boss|OutPart|Pattern")
+	bool IsTemporarilyDisabled() const;
+
+	UFUNCTION(BlueprintPure, Category = "Boss|OutPart|Pattern")
+	bool CanStartPattern() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|OutPart|Pattern")
+	void DisablePatternForDuration(float DisableDuration);
+
+	UFUNCTION(BlueprintPure, Category = "Boss|OutPart|MiniGame")
+	float GetMiniGameSuccessDisableDuration() const { return MiniGameSuccessDisableDuration; }
+
 	FOnBossOutPartPatternFinished OnPatternFinished;
 
 protected:
@@ -72,6 +84,33 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Summon", meta = (ClampMin = "0.0"))
 	float SummonPatternLockDuration = 1.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Summon", meta = (ClampMin = "0.0"))
+	float SummonWarningDuration = 0.75f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Summon", meta = (ClampMin = "0.01"))
+	float SummonSpawnInterval = 0.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Summon", meta = (ClampMin = "0.0"))
+	float SummonSpawnForwardDistance = 220.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Summon", meta = (ClampMin = "0.0"))
+	float SummonSpawnLateralSpacing = 120.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Summon", meta = (ClampMin = "0.0"))
+	float SummonSpawnRadius = 160.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Summon", meta = (ClampMin = "0.0"))
+	float SummonSpawnVerticalOffset = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Summon", meta = (ClampMin = "0.0"))
+	float SummonSpawnForwardRandomOffset = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Summon", meta = (ClampMin = "0.0"))
+	float SummonSpawnLateralRandomOffset = 80.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Summon", meta = (ClampMin = "0.0"))
+	float SummonSpawnVerticalRandomOffset = 50.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Summon")
 	TArray<TSubclassOf<AActor>> SummonActorClasses;
 
@@ -80,6 +119,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|MiniGame", meta = (ClampMin = "0.0"))
 	float MiniGamePatternLockDuration = 3.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|MiniGame", meta = (ClampMin = "0.0"))
+	float MiniGameSuccessDisableDuration = 10.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile")
 	TSubclassOf<ABulletBase> MissileProjectileClass;
@@ -90,6 +132,39 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile", meta = (ClampMin = "0.01"))
 	float MissileFireInterval = 0.15f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile", meta = (ClampMin = "0.0"))
+	float MissileInitialFireDelay = 0.45f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile", meta = (ClampMin = "0.0"))
+	float MissileLaunchSpreadAngleDegrees = 12.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile", meta = (ClampMin = "0.0"))
+	float MissileLaunchPitchSpreadAngleDegrees = 6.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile", meta = (ClampMin = "0.0"))
+	float MissileHomingActivationDelay = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile", meta = (ClampMin = "0.0"))
+	float MissileMoveSpeed = 650.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile", meta = (ClampMin = "0.0"))
+	float MissileMaxSpeed = 650.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile", meta = (ClampMin = "0.0"))
+	float MissileSpeedRampDelay = 1.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile", meta = (ClampMin = "0.0"))
+	float MissileSpeedRampInterpSpeed = 1.75f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile", meta = (ClampMin = "0.0"))
+	float MissileTurnInterpSpeed = 3.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile", meta = (ClampMin = "0.0"))
+	float MissileHitPoints = 2.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Missile")
+	bool bMissilesCanBeShotDown = true;
+
 private:
 	UPROPERTY()
 	TObjectPtr<AMissileBarrageActor> ActiveMissileBarrage;
@@ -98,11 +173,15 @@ private:
 	TObjectPtr<UCraftAttackComponent> CommonAttackComponent;
 	TObjectPtr<ULaserAttackComponent> LaserAttackComponent;
 	FTimerHandle PatternFinishTimerHandle;
+	FTimerHandle SummonSequenceTimerHandle;
 	bool bPatternActive = false;
+	int32 PendingSummonSpawnCount = 0;
+	float DisabledUntilTime = 0.0f;
 
 	AActor* ResolveTargetActor(AActor* TargetActor) const;
 	void BeginPatternLock(float LockDuration);
 	void FinishPattern();
+	void SpawnNextSummon();
 	bool ExecuteLaserPattern(AActor* TargetActor);
 	bool ExecuteSummonPattern();
 	bool ExecuteMiniGamePattern();

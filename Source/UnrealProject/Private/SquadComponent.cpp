@@ -39,6 +39,11 @@ void USquadComponent::ShiftActiveSlotRight()
 	}
 }
 
+void USquadComponent::SetActiveSlotDirect(ESquadSlot NewSlot)
+{
+	SetActiveSlot(NewSlot);
+}
+
 FVector USquadComponent::GetSlotOffset(ESquadSlot Slot) const
 {
 	switch (Slot)

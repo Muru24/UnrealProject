@@ -7,6 +7,18 @@ UHomingMovementComponent::UHomingMovementComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
+void UHomingMovementComponent::SetHomingActivationDelay(float InHomingActivationDelay)
+{
+	HomingActivationDelay = FMath::Max(0.0f, InHomingActivationDelay);
+	HomingElapsedTime = 0.0f;
+}
+
+void UHomingMovementComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	HomingElapsedTime = 0.0f;
+}
+
 void UHomingMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -17,6 +29,8 @@ void UHomingMovementComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 		return;
 	}
 
+	HomingElapsedTime += DeltaTime;
+
 	AActor* CurrentTarget = BulletOwner->GetTarget();
 	if (!IsValid(CurrentTarget))
 	{
@@ -24,11 +38,11 @@ void UHomingMovementComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 		CurrentTarget = nullptr;
 	}
 
-	if (CurrentTarget)
+	if (CurrentTarget && HomingElapsedTime >= HomingActivationDelay)
 	{
 		const FVector Direction = (CurrentTarget->GetActorLocation() - BulletOwner->GetActorLocation()).GetSafeNormal();
 		const FRotator TargetRotation = Direction.Rotation();
-		const FRotator NewRotation = FMath::RInterpTo(BulletOwner->GetActorRotation(), TargetRotation, DeltaTime, 20.0f);
+		const FRotator NewRotation = FMath::RInterpTo(BulletOwner->GetActorRotation(), TargetRotation, DeltaTime, TurnInterpSpeed);
 		BulletOwner->SetActorRotation(NewRotation);
 	}
 

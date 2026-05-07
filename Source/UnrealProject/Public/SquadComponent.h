@@ -24,6 +24,7 @@ public:
 
 	void ShiftActiveSlotLeft();
 	void ShiftActiveSlotRight();
+	void SetActiveSlotDirect(ESquadSlot NewSlot);
 
 	ESquadSlot GetActiveSlot() const { return ActiveSlot; }
 	FVector GetSlotOffset(ESquadSlot Slot) const;

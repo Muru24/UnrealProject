@@ -1,6 +1,7 @@
 #include "BossPatternSchedulerComponent.h"
 
 #include "BossOutPart.h"
+#include "BossOutPartPatternComponent.h"
 #include "BossPartPatternCoordinatorComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Pawn_CompositeMaster.h"
@@ -68,9 +69,12 @@ void UBossPatternSchedulerComponent::TryRunNextSpecialPattern()
 	{
 		if (ABossOutPart* SupportPart = Cast<ABossOutPart>(SupportPartActor))
 		{
-			if (SupportPart->GetPatternComponent())
+			if (UBossOutPartPatternComponent* PatternComponent = SupportPart->GetPatternComponent())
 			{
-				AvailableParts.Add(SupportPart);
+				if (PatternComponent->CanStartPattern())
+				{
+					AvailableParts.Add(SupportPart);
+				}
 			}
 		}
 	}
@@ -93,6 +97,12 @@ void UBossPatternSchedulerComponent::TryRunCommonPatterns()
 
 	UBossPartPatternCoordinatorComponent* Coordinator = OwnerCompositeMaster->GetBossPartPatternCoordinatorComponent();
 	if (!Coordinator)
+	{
+		return;
+	}
+
+	if (Coordinator->GetActivePatternPart() &&
+		Coordinator->GetActivePatternType() == EBossOutPartPatternType::HomingMissile)
 	{
 		return;
 	}

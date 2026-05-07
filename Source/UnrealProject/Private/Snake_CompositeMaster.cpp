@@ -2,9 +2,7 @@
 
 
 #include "Snake_CompositeMaster.h"
-#include "Kismet/GameplayStatics.h"
 #include "SnakeBodyChargeComponent.h"
-#include "BossPhaseComponent.h"
 #include "SnakePathController.h"
 #include "SnakeSkillManager.h"
 
@@ -23,7 +21,6 @@ void ASnake_CompositeMaster::BeginPlay()
     
     CurrentOrbitAngle = 0.0f;
     ShrinkSpeed = 3.0f;
-    ApplyBossPhase(EBossEncounterPhase::Intro);
 }
 
 void ASnake_CompositeMaster::Tick(float DeltaTime)
@@ -107,39 +104,6 @@ void ASnake_CompositeMaster::Tick(float DeltaTime)
                 SkillComp->UpdateTargetInfo(BlendedLoc, Outward, OrbitNormal, SegAngle, Tangent.Rotation()); 
             }
         }
-    }
-}
-
-void ASnake_CompositeMaster::ApplyBossPhase(EBossEncounterPhase NewPhase)
-{
-    if (SkillManager)
-    {
-        SkillManager->ApplyBossPhase(NewPhase);
-    }
-
-    switch (NewPhase)
-    {
-    case EBossEncounterPhase::Intro:
-        OrbitSpeed = 0.6f;
-        ShrinkSpeed = 2.5f;
-        break;
-    case EBossEncounterPhase::Phase1:
-        OrbitSpeed = 0.9f;
-        ShrinkSpeed = 3.0f;
-        break;
-    case EBossEncounterPhase::Phase2:
-        OrbitSpeed = 1.15f;
-        ShrinkSpeed = 3.75f;
-        break;
-    case EBossEncounterPhase::Enraged:
-        OrbitSpeed = 1.4f;
-        ShrinkSpeed = 4.5f;
-        break;
-    case EBossEncounterPhase::Defeated:
-        RunPatten = false;
-        break;
-    default:
-        break;
     }
 }
 

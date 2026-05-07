@@ -6,6 +6,11 @@
 #include "SquadComponent.h"
 #include "SquadCraftActor.generated.h"
 
+class UStatComponent;
+class USphereComponent;
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSquadCraftDefeated, ASquadCraftActor*);
+
 UCLASS()
 class UNREALPROJECT_API ASquadCraftActor : public AActor
 {
@@ -30,16 +35,23 @@ public:
 	bool TryAutoFireAt(const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn);
 	bool TryActivateOffensiveSkill(AActor* TargetActor = nullptr);
 	bool TryActivateBuffSkill(AActor* TargetActor = nullptr);
+	bool IsOperational() const { return !bCraftDefeated; }
 
 	USceneComponent* GetFireOrigin() const { return FireOrigin; }
 	UStaticMeshComponent* GetCraftMesh() const { return CraftMesh; }
 	ECraftCombatRole GetCombatRole() const;
 	bool IsActiveCraft() const { return bIsActiveCraft; }
 	class USkillComponent* GetSkillComponent() const { return SkillComponent; }
+	UStatComponent* GetStatComponent() const { return StatComponent; }
+
+	FOnSquadCraftDefeated OnCraftDefeated;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> SceneRoot;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USphereComponent> CollisionComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> VisualRoot;
@@ -59,6 +71,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<class USkillComponent> SkillComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UStatComponent> StatComponent;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Squad")
 	float TransformInterpSpeed = 8.0f;
 
@@ -72,6 +87,9 @@ protected:
 	bool bIsActiveCraft = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Squad")
+	bool bCraftDefeated = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Squad")
 	ESquadSlot AssignedSlot = ESquadSlot::Center;
 
 	FVector DesiredRelativeLocation = FVector::ZeroVector;
@@ -79,5 +97,9 @@ protected:
 	FRotator DesiredMeshTiltRotation = FRotator::ZeroRotator;
 
 private:
+	UFUNCTION()
+	void HandleHpChanged(float CurrentHp);
+
+	void HandleCraftDefeated();
 	void ApplyLoadout();
 };

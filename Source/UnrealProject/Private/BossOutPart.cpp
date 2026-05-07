@@ -4,7 +4,11 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "CraftAttackComponent.h"
+#include "HUDManager.h"
+#include "Kismet/GameplayStatics.h"
 #include "LaserAttackComponent.h"
+#include "Pawn_CompositeMaster.h"
+#include "StatComponent.h"
 
 ABossOutPart::ABossOutPart()
 {
@@ -37,6 +41,11 @@ void ABossOutPart::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (StatComponent)
+	{
+		StatComponent->OnHpChanged.AddDynamic(this, &ABossOutPart::HandleHpChanged);
+	}
+
 	DesiredVisualRotation = bUseSideAttackPose ? SideAttackVisualRotation : DefaultVisualRotation;
 
 	if (VisualRoot)
@@ -48,6 +57,16 @@ void ABossOutPart::BeginPlay()
 	{
 		LaserAttackComponent->SetFireOrigin(SideFireOrigin);
 	}
+}
+
+void ABossOutPart::HandleHpChanged(float CurrentHp)
+{
+	if (CurrentHp > 0.0f || bPartDestroyedHandled)
+	{
+		return;
+	}
+
+	HandlePartDestroyed();
 }
 
 void ABossOutPart::Tick(float DeltaTime)
@@ -71,6 +90,50 @@ void ABossOutPart::SetUseSideAttackPose(bool bEnableSideAttackPose)
 {
 	bUseSideAttackPose = bEnableSideAttackPose;
 	DesiredVisualRotation = bUseSideAttackPose ? SideAttackVisualRotation : DefaultVisualRotation;
+}
+
+void ABossOutPart::HandlePartDestroyed()
+{
+	if (bPartDestroyedHandled)
+	{
+		return;
+	}
+
+	bPartDestroyedHandled = true;
+
+	if (APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+	{
+		if (AHUDManager* HUDManager = Cast<AHUDManager>(PlayerController->GetHUD()))
+		{
+			if (PatternComponent && HUDManager->IsMiniGameOwnedByPattern(PatternComponent))
+			{
+				HUDManager->ForceFinishMiniGame(true);
+			}
+		}
+	}
+
+	if (APawn_CompositeMaster* OwningCompositeMaster = GetOwningCompositeMaster())
+	{
+		OwningCompositeMaster->StopAllBossCombat();
+		OwningCompositeMaster->RequestCombatRestartSequence();
+	}
+
+	RequestPartDestroyedSequence();
+}
+
+void ABossOutPart::RequestPartDestroyedSequence()
+{
+	ReceivePartDestroyedSequenceRequested();
+}
+
+APawn_CompositeMaster* ABossOutPart::GetOwningCompositeMaster() const
+{
+	if (const USceneComponent* ParentSceneComponent = GetParentComponent())
+	{
+		return Cast<APawn_CompositeMaster>(ParentSceneComponent->GetOwner());
+	}
+
+	return nullptr;
 }
 
 USceneComponent* ABossOutPart::GetActiveFireOrigin() const

@@ -41,7 +41,7 @@ void UBossOutPartPatternComponent::BeginPlay()
 
 bool UBossOutPartPatternComponent::FireCommonPattern(AActor* TargetActor)
 {
-	if (!OwnerPart || !CommonAttackComponent)
+	if (!CanStartPattern() || !OwnerPart || !CommonAttackComponent)
 	{
 		return false;
 	}
@@ -62,6 +62,11 @@ bool UBossOutPartPatternComponent::FireCommonPattern(AActor* TargetActor)
 
 bool UBossOutPartPatternComponent::ExecuteSpecialPattern(AActor* TargetActor)
 {
+	if (!CanStartPattern())
+	{
+		return false;
+	}
+
 	switch (PatternType)
 	{
 	case EBossOutPartPatternType::Laser:
@@ -82,6 +87,7 @@ void UBossOutPartPatternComponent::StopActivePattern()
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(PatternFinishTimerHandle);
+		GetWorld()->GetTimerManager().ClearTimer(SummonSequenceTimerHandle);
 	}
 
 	if (LaserAttackComponent)
@@ -100,7 +106,29 @@ void UBossOutPartPatternComponent::StopActivePattern()
 		OwnerPart->SetUseSideAttackPose(false);
 	}
 
+	PendingSummonSpawnCount = 0;
 	FinishPattern();
+}
+
+bool UBossOutPartPatternComponent::IsTemporarilyDisabled() const
+{
+	return GetWorld() && GetWorld()->GetTimeSeconds() < DisabledUntilTime;
+}
+
+bool UBossOutPartPatternComponent::CanStartPattern() const
+{
+	return !IsTemporarilyDisabled();
+}
+
+void UBossOutPartPatternComponent::DisablePatternForDuration(float DisableDuration)
+{
+	if (DisableDuration <= 0.0f || !GetWorld())
+	{
+		return;
+	}
+
+	DisabledUntilTime = FMath::Max(DisabledUntilTime, GetWorld()->GetTimeSeconds() + DisableDuration);
+	StopActivePattern();
 }
 
 AActor* UBossOutPartPatternComponent::ResolveTargetActor(AActor* TargetActor) const
@@ -138,6 +166,7 @@ void UBossOutPartPatternComponent::FinishPattern()
 {
 	const bool bWasActive = bPatternActive;
 	bPatternActive = false;
+	PendingSummonSpawnCount = 0;
 
 	if (OwnerPart)
 	{
@@ -177,35 +206,22 @@ bool UBossOutPartPatternComponent::ExecuteSummonPattern()
 	}
 
 	OwnerPart->SetUseSideAttackPose(true);
+	PendingSummonSpawnCount = SummonCount;
 
-	bool bSpawnedAny = false;
-	const FVector SpawnOrigin = OwnerPart->GetSideFireOrigin()
-		? OwnerPart->GetSideFireOrigin()->GetComponentLocation()
-		: OwnerPart->GetActorLocation();
+	const float TotalPatternDuration =
+		SummonWarningDuration +
+		(FMath::Max(0, SummonCount - 1) * SummonSpawnInterval) +
+		SummonPatternLockDuration;
+	BeginPatternLock(TotalPatternDuration);
 
-	for (int32 SpawnIndex = 0; SpawnIndex < SummonCount; ++SpawnIndex)
-	{
-		TSubclassOf<AActor> SpawnClass = SummonActorClasses[FMath::RandRange(0, SummonActorClasses.Num() - 1)];
-		if (!SpawnClass)
-		{
-			continue;
-		}
-
-		const FVector SpawnLocation = SpawnOrigin + FVector(0.0f, 120.0f * SpawnIndex, 0.0f);
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = OwnerPart;
-		SpawnParams.Instigator = Cast<APawn>(OwnerPart);
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-		bSpawnedAny |= (GetWorld()->SpawnActor<AActor>(SpawnClass, SpawnLocation, OwnerPart->GetActorRotation(), SpawnParams) != nullptr);
-	}
-
-	if (bSpawnedAny)
-	{
-		BeginPatternLock(SummonPatternLockDuration);
-	}
-
-	return bSpawnedAny;
+	GetWorld()->GetTimerManager().ClearTimer(SummonSequenceTimerHandle);
+	GetWorld()->GetTimerManager().SetTimer(
+		SummonSequenceTimerHandle,
+		this,
+		&UBossOutPartPatternComponent::SpawnNextSummon,
+		FMath::Max(0.01f, SummonWarningDuration),
+		false);
+	return true;
 }
 
 bool UBossOutPartPatternComponent::ExecuteMiniGamePattern()
@@ -223,7 +239,7 @@ bool UBossOutPartPatternComponent::ExecuteMiniGamePattern()
 	}
 
 	OwnerPart->SetUseSideAttackPose(true);
-	HUDManager->StartTargetMiniGame(MiniGameTargetCount);
+	HUDManager->StartTargetMiniGame(MiniGameTargetCount, this);
 	BeginPatternLock(MiniGamePatternLockDuration);
 	return true;
 }
@@ -272,7 +288,84 @@ bool UBossOutPartPatternComponent::ExecuteHomingMissilePattern(AActor* TargetAct
 		ActiveMissileBarrage->AttachToComponent(OwnerPart->GetSideFireOrigin(), FAttachmentTransformRules::KeepWorldTransform);
 	}
 
+	ActiveMissileBarrage->ConfigureMissiles(
+		MissileMoveSpeed,
+		MissileMaxSpeed,
+		MissileTurnInterpSpeed,
+		MissileHitPoints,
+		bMissilesCanBeShotDown,
+		MissileInitialFireDelay,
+		MissileLaunchSpreadAngleDegrees,
+		MissileLaunchPitchSpreadAngleDegrees,
+		MissileHomingActivationDelay,
+		MissileSpeedRampDelay,
+		MissileSpeedRampInterpSpeed);
 	ActiveMissileBarrage->Init(MissileTargets, MissileProjectileClass, MissileFireInterval);
-	BeginPatternLock(FMath::Max(0.1f, MissileCount * MissileFireInterval + 0.25f));
+	BeginPatternLock(FMath::Max(0.1f, MissileInitialFireDelay + (MissileCount * MissileFireInterval) + 0.25f));
 	return true;
+}
+
+void UBossOutPartPatternComponent::SpawnNextSummon()
+{
+	if (!OwnerPart || !GetWorld() || PendingSummonSpawnCount <= 0 || SummonActorClasses.Num() == 0)
+	{
+		PendingSummonSpawnCount = 0;
+		return;
+	}
+
+	const int32 SpawnIndex = SummonCount - PendingSummonSpawnCount;
+	TSubclassOf<AActor> SpawnClass = SummonActorClasses[FMath::RandRange(0, SummonActorClasses.Num() - 1)];
+	if (SpawnClass)
+	{
+		const USceneComponent* SpawnOriginComponent = OwnerPart->GetSideFireOrigin()
+			? OwnerPart->GetSideFireOrigin()
+			: OwnerPart->GetRootComponent();
+
+		const FVector SpawnOrigin = SpawnOriginComponent
+			? SpawnOriginComponent->GetComponentLocation()
+			: OwnerPart->GetActorLocation();
+		const FVector ForwardVector = SpawnOriginComponent
+			? SpawnOriginComponent->GetForwardVector()
+			: OwnerPart->GetActorForwardVector();
+		const FVector RightVector = SpawnOriginComponent
+			? SpawnOriginComponent->GetRightVector()
+			: OwnerPart->GetActorRightVector();
+		const FVector UpVector = SpawnOriginComponent
+			? SpawnOriginComponent->GetUpVector()
+			: OwnerPart->GetActorUpVector();
+
+		const float AngleStepRadians = (SummonCount > 0) ? (2.0f * PI / static_cast<float>(SummonCount)) : 0.0f;
+		const float SlotAngleRadians = SpawnIndex * AngleStepRadians;
+		const float LateralOffset = (SpawnIndex - ((SummonCount - 1) * 0.5f)) * SummonSpawnLateralSpacing;
+		const float ForwardRandomOffset = FMath::FRandRange(-SummonSpawnForwardRandomOffset, SummonSpawnForwardRandomOffset);
+		const float LateralRandomOffset = FMath::FRandRange(-SummonSpawnLateralRandomOffset, SummonSpawnLateralRandomOffset);
+		const float VerticalRandomOffset = FMath::FRandRange(-SummonSpawnVerticalRandomOffset, SummonSpawnVerticalRandomOffset);
+		const FVector RadialOffset =
+			(ForwardVector * FMath::Cos(SlotAngleRadians) * SummonSpawnRadius) +
+			(RightVector * FMath::Sin(SlotAngleRadians) * SummonSpawnRadius);
+		const FVector SpawnLocation =
+			SpawnOrigin +
+			(ForwardVector * (SummonSpawnForwardDistance + ForwardRandomOffset)) +
+			RadialOffset +
+			(RightVector * (LateralOffset + LateralRandomOffset)) +
+			(UpVector * (SummonSpawnVerticalOffset + VerticalRandomOffset));
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = OwnerPart;
+		SpawnParams.Instigator = Cast<APawn>(OwnerPart);
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+		GetWorld()->SpawnActor<AActor>(SpawnClass, SpawnLocation, OwnerPart->GetActorRotation(), SpawnParams);
+	}
+
+	--PendingSummonSpawnCount;
+	if (PendingSummonSpawnCount > 0)
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			SummonSequenceTimerHandle,
+			this,
+			&UBossOutPartPatternComponent::SpawnNextSummon,
+			FMath::Max(0.01f, SummonSpawnInterval),
+			false);
+	}
 }

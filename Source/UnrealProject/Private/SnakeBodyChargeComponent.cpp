@@ -187,6 +187,21 @@ void USnakeBodyChargeComponent::StopLaser()
     CurrentState = ESnakePartSkillState::Returning;
 }
 
+void USnakeBodyChargeComponent::CancelSkillSequence()
+{
+    if (LaserComponent)
+    {
+        LaserComponent->StopLaser();
+    }
+
+    TargetActor = nullptr;
+    bReachedFormation = false;
+    bLaunchSignaled = false;
+    SequentialLaunchDelay = 0.0f;
+    StateTimer = 0.0f;
+    CurrentState = ESnakePartSkillState::Idle;
+}
+
 void USnakeBodyChargeComponent::UpdateTargetInfo(const FVector& InBaseLoc, const FVector& InOutward, const FVector& InUp, float InAngle, const FRotator& InRot)
 {
     TargetBaseLocation = InBaseLoc;

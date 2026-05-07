@@ -23,4 +23,37 @@ protected:
 
     UPROPERTY(EditAnywhere, Category = "Skill")
     float FireInterval = 0.1f;
+
+    UPROPERTY(EditAnywhere, Category = "Skill|Missile")
+    float MissileMoveSpeed = 1400.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Skill|Missile")
+    float MissileMaxSpeed = 1800.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Skill|Missile")
+    float MissileTurnInterpSpeed = 10.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Skill|Missile")
+    float MissileInitialFireDelay = 0.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Skill|Missile")
+    float MissileLaunchSpreadAngleDegrees = 4.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Skill|Missile")
+    float MissileLaunchPitchSpreadAngleDegrees = 2.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Skill|Missile")
+    float MissileHomingActivationDelay = 0.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Skill|Missile")
+    float MissileSpeedRampDelay = 0.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Skill|Missile")
+    float MissileSpeedRampInterpSpeed = 0.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Skill|Missile")
+    float MissileHitPoints = 0.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Skill|Missile")
+    bool bMissilesCanBeShotDown = false;
 };

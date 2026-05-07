@@ -74,6 +74,7 @@ protected:
 	void TriggerBuffSkill();
 	void UpdateAutoBuffSkill(float DeltaTime);
 	void HandleSupportAutoFire();
+	void HandleSquadCraftDefeated(ASquadCraftActor* DefeatedCraft);
 	ASquadCraftActor* GetActiveCraft() const;
 
 public:

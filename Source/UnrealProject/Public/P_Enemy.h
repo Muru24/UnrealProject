@@ -20,6 +20,6 @@ public:
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UPathFollowerComponent* PathFollower;
+	class UEnemyRushComponent* EnemyRushComponent;
 
 };

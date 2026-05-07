@@ -10,49 +10,6 @@ USnakeSkillManager::USnakeSkillManager()
     SkillAutoTriggerTimer = 10.0f;
 }
 
-void USnakeSkillManager::ApplyBossPhase(EBossEncounterPhase NewPhase)
-{
-    switch (NewPhase)
-    {
-    case EBossEncounterPhase::Intro:
-        SkillAutoTriggerDelay = 10.0f;
-        LaunchDelayBetweenParts = 0.25f;
-        FormationRadius = 450.0f;
-        LaserPrepareTime = 1.5f;
-        LaserDuration = 4.0f;
-        break;
-    case EBossEncounterPhase::Phase1:
-        SkillAutoTriggerDelay = 8.0f;
-        LaunchDelayBetweenParts = 0.2f;
-        FormationRadius = 425.0f;
-        LaserPrepareTime = 1.25f;
-        LaserDuration = 4.5f;
-        break;
-    case EBossEncounterPhase::Phase2:
-        SkillAutoTriggerDelay = 6.0f;
-        LaunchDelayBetweenParts = 0.16f;
-        FormationRadius = 375.0f;
-        LaserPrepareTime = 1.0f;
-        LaserDuration = 5.0f;
-        break;
-    case EBossEncounterPhase::Enraged:
-        SkillAutoTriggerDelay = 4.5f;
-        LaunchDelayBetweenParts = 0.12f;
-        FormationRadius = 325.0f;
-        LaserPrepareTime = 0.8f;
-        LaserDuration = 5.5f;
-        break;
-    case EBossEncounterPhase::Defeated:
-        bIsSkillActive = false;
-        CurrentSkillPhase = ESnakeSkillState::Idle;
-        return;
-    default:
-        break;
-    }
-
-    SkillAutoTriggerTimer = FMath::Min(SkillAutoTriggerTimer, SkillAutoTriggerDelay);
-}
-
 void USnakeSkillManager::Update(float DeltaTime, const TArray<UChildActorComponent*>& Segments)
 {
     ASnake_CompositeMaster* Master = Cast<ASnake_CompositeMaster>(GetOwner());
@@ -224,6 +181,34 @@ void USnakeSkillManager::StartBodyChargeSkill(const TArray<UChildActorComponent*
                 
                 SkillComp->InitSkillSequence(UGameplayStatics::GetPlayerPawn(GetWorld(), 0), TargetFormPos, Master->GetActorRotation(), i * LaunchDelayBetweenParts);
             }
+        }
+    }
+}
+
+void USnakeSkillManager::StopAllSkills(const TArray<UChildActorComponent*>& Segments)
+{
+    bIsSkillActive = false;
+    CurrentSkillPhase = ESnakeSkillState::Idle;
+    StateTimer = 0.0f;
+    SequentialTimer = 0.0f;
+    CurrentFiringIndex = 0;
+    SkillAutoTriggerTimer = SkillAutoTriggerDelay;
+
+    if (ASnake_CompositeMaster* Master = Cast<ASnake_CompositeMaster>(GetOwner()))
+    {
+        Master->RunPatten = false;
+    }
+
+    for (UChildActorComponent* Segment : Segments)
+    {
+        if (!Segment || !Segment->GetChildActor())
+        {
+            continue;
+        }
+
+        if (USnakeBodyChargeComponent* SkillComp = Segment->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
+        {
+            SkillComp->CancelSkillSequence();
         }
     }
 }

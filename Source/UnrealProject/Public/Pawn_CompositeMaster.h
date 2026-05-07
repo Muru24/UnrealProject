@@ -11,6 +11,8 @@ class UBossPatternSchedulerComponent;
 class UBossSupportPartOrbitComponent;
 class ABossCore;
 class ABossOutPart;
+class USnakeBodyChargeComponent;
+class UBossOutPartPatternComponent;
 
 UCLASS()
 class UNREALPROJECT_API APawn_CompositeMaster : public AActor
@@ -37,6 +39,15 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Composite")
 	UBossPartPatternCoordinatorComponent* GetBossPartPatternCoordinatorComponent() const { return BossPartPatternCoordinatorComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Combat")
+	void StopAllBossCombat();
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Combat")
+	void RequestCombatRestartSequence();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Boss|Combat")
+	void ReceiveCombatRestartSequenceRequested();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

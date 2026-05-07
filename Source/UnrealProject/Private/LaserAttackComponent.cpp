@@ -25,13 +25,13 @@ void ULaserAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 		return;
 	}
 
-	if (!IsValid(TargetActor) && !IsValid(TargetComponent))
+	if (!bHasLockedAimLocation)
 	{
 		StopLaser();
 		return;
 	}
 
-	const FVector AimLocation = GetTargetLocationWithExtension();
+	const FVector AimLocation = ResolveCurrentAimLocation();
 
 	if (bWarningActive)
 	{
@@ -119,6 +119,7 @@ void ULaserAttackComponent::StopLaser()
 	AttackTimeTracker = 0.0f;
 	WarningTimeTracker = 0.0f;
 	CurrentBeamAimLocation = FVector::ZeroVector;
+	bHasLockedAimLocation = false;
 	DeactivateActiveBeam();
 }
 
@@ -136,7 +137,7 @@ void ULaserAttackComponent::SetTargetComponent(USceneComponent* InTargetComponen
 
 void ULaserAttackComponent::FireBeam()
 {
-	if ((!bWarningActive && !bAttackActive) || (!IsValid(TargetActor) && !IsValid(TargetComponent)) || !BeamActorClass)
+	if ((!bWarningActive && !bAttackActive) || !bHasLockedAimLocation || !BeamActorClass)
 	{
 		return;
 	}
@@ -161,7 +162,7 @@ void ULaserAttackComponent::FireBeam()
 	}
 
 	ActiveBeamActor->SetActorLocation(GetFireOriginLocation());
-	ActiveBeamActor->SetBeamEnd(GetTargetLocationWithExtension(), false);
+	ActiveBeamActor->SetBeamEnd(ResolveCurrentAimLocation(), false);
 
 	if (bWarningActive)
 	{
@@ -191,6 +192,7 @@ void ULaserAttackComponent::BeginLaserWarning()
 	AttackTimeTracker = 0.0f;
 	WarningTimeTracker = 0.0f;
 	CurrentBeamAimLocation = GetTargetLocationWithExtension();
+	bHasLockedAimLocation = true;
 	FireBeam();
 
 	if (UWorld* World = GetWorld())
@@ -211,7 +213,7 @@ void ULaserAttackComponent::BeginLaserFiring()
 		return;
 	}
 
-	if (!IsValid(TargetActor) && !IsValid(TargetComponent))
+	if (!bHasLockedAimLocation)
 	{
 		StopLaser();
 		return;
@@ -220,7 +222,6 @@ void ULaserAttackComponent::BeginLaserFiring()
 	bWarningActive = false;
 	bAttackActive = true;
 	AttackTimeTracker = 0.0f;
-	CurrentBeamAimLocation = GetTargetLocationWithExtension();
 	FireBeam();
 
 	if (UWorld* World = GetWorld())
@@ -247,6 +248,11 @@ void ULaserAttackComponent::DeactivateActiveBeam()
 		ActiveBeamActor->Destroy();
 		ActiveBeamActor = nullptr;
 	}
+}
+
+FVector ULaserAttackComponent::ResolveCurrentAimLocation() const
+{
+	return CurrentBeamAimLocation;
 }
 
 FVector ULaserAttackComponent::GetTargetLocationWithExtension() const

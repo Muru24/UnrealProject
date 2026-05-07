@@ -8,6 +8,7 @@ class USceneComponent;
 class UCraftAttackComponent;
 class ULaserAttackComponent;
 class UBossOutPartPatternComponent;
+class APawn_CompositeMaster;
 
 UCLASS()
 class UNREALPROJECT_API ABossOutPart : public APawn_Template
@@ -19,6 +20,9 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|OutPart|Death")
+	void HandlePartDestroyed();
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|OutPart")
 	void SetUseSideAttackPose(bool bEnableSideAttackPose);
@@ -41,7 +45,19 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Boss|OutPart")
 	UBossOutPartPatternComponent* GetPatternComponent() const { return PatternComponent; }
 
+	UFUNCTION(BlueprintCallable, Category = "Boss|OutPart|Death")
+	void RequestPartDestroyedSequence();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Boss|OutPart|Death")
+	void ReceivePartDestroyedSequenceRequested();
+
+	UFUNCTION(BlueprintPure, Category = "Boss|OutPart")
+	APawn_CompositeMaster* GetOwningCompositeMaster() const;
+
 protected:
+	UFUNCTION()
+	void HandleHpChanged(float CurrentHp);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> VisualRoot;
 
@@ -74,4 +90,5 @@ protected:
 
 private:
 	FRotator DesiredVisualRotation = FRotator::ZeroRotator;
+	bool bPartDestroyedHandled = false;
 };
