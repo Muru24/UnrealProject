@@ -45,6 +45,12 @@ public:
 	UStatComponent* GetStatComponent() const { return StatComponent; }
 
 	FOnSquadCraftDefeated OnCraftDefeated;
+	
+	UFUNCTION(BlueprintPure, Category = "Squad|Status")
+	void GetHealthInfo(float& CurrentHP, float& MaxHP) const;
+
+	UFUNCTION(BlueprintPure, Category = "Squad|Status")
+	void GetSkillCooldowns(float& OutBuffCooldown, float& OutOffensiveCooldown) const;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

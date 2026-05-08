@@ -9,6 +9,7 @@ class UCraftAttackComponent;
 class ULaserAttackComponent;
 class UBossOutPartPatternComponent;
 class APawn_CompositeMaster;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class UNREALPROJECT_API ABossOutPart : public APawn_Template
@@ -87,6 +88,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|OutPart")
 	bool bUseSideAttackPose = false;
+
+protected:
+	virtual void OnDissolveOutFinished() override;
 
 private:
 	FRotator DesiredVisualRotation = FRotator::ZeroRotator;

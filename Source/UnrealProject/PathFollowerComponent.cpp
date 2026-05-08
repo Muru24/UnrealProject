@@ -13,6 +13,10 @@ UPathFollowerComponent::UPathFollowerComponent()
 
 void UPathFollowerComponent::SetAcceleration(float Value)
 {
+	if (IsAccelerationActive())
+	{
+		return;
+	}
 	Acceleration = Value;
 	RemainingAccelerationTime = (Value > 0.0f) ? FMath::Max(0.0f, AccelerationDuration) : 0.0f;
 }

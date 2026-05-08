@@ -14,6 +14,8 @@ class UNREALPROJECT_API AHUDManager : public AHUD
 	GENERATED_BODY()
 
 public:
+	AHUDManager();
+
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UUserWidget> HUDWidgetClass;
 
@@ -45,6 +47,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "UI|MiniGame")
 	int32 ActiveTargetsCount = 0;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI|MiniGame")
+	bool bMiniGameActive = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI|MiniGame")
+	float RemainingMiniGameTime = 0.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI|MiniGame")
 	float MiniGameTimeLimit = 5.0f;
 
@@ -55,6 +63,7 @@ protected:
 	void HandleTargetClicked();
 
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 private:
 	UPROPERTY()
@@ -64,7 +73,6 @@ private:
 	TObjectPtr<UBossOutPartPatternComponent> ActiveMiniGameSourcePatternComponent;
 
 	FTimerHandle MiniGameFailTimerHandle;
-	bool bMiniGameActive = false;
 
 	void EndTargetMiniGame(bool bWasSuccessful);
 	void HandleMiniGameFailed();

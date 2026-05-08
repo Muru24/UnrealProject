@@ -26,6 +26,11 @@ public:
 	const FSkillSpec& GetBuffSkill() const { return BuffSkill; }
 	const FSkillSpec& GetOffensiveSkill() const { return OffensiveSkill; }
 
+	UFUNCTION(BlueprintPure, Category = "skill")
+	float GetBuffSkillCooldownRemaining() const { return BuffSkillCooldownRemaining; }
+	UFUNCTION(BlueprintPure, Category = "skill")
+	float GetOffensiveSkillCooldownRemaining() const { return OffensiveSkillCooldownRemaining; }
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skills")
 	FSkillSpec BuffSkill;

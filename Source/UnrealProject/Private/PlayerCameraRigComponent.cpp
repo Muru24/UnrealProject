@@ -102,7 +102,7 @@ void UPlayerCameraRigComponent::UpdateCameraZoom(USpringArmComponent* SpringArmC
 	const float TargetArmLength = bIsAccelerating
 		? BaseArmLength + AccelerationZoomOutDistance
 		: BaseArmLength;
-	const float ZoomInterpSpeed = bIsAccelerating ? CameraZoomInterpSpeed : CameraZoomReturnInterpSpeed;
+	const float ZoomInterpSpeed = bIsAccelerating ? FMath::Max(1.0f, CameraZoomInterpSpeed) : FMath::Max(1.0f, CameraZoomReturnInterpSpeed);
 
 	SpringArmComponent->TargetArmLength = FMath::FInterpTo(
 		SpringArmComponent->TargetArmLength,

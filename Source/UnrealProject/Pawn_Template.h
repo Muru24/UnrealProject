@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -10,6 +10,7 @@
 class USphereComponent;
 class UStaticMeshComponent;
 class UPathFollowerComponent;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class UNREALPROJECT_API APawn_Template : public APawn
@@ -22,19 +23,31 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	//±âº» À¯´Ö ÇÊ¼ö ÄÄÆ÷³ÍÆ®
-	// Ãæµ¹ ÄÄÆ÷³ÍÆ®
+	//ê¸°ë³¸ ìœ ë‹› í•„ìˆ˜ ì»´í¬ë„ŒíŠ¸
+	// ì¶©ëŒ ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	 USphereComponent* CollisionComponent;
+	USphereComponent* CollisionComponent;
 
-	//¿ÜÇü ÇÁ¸®ÆÕ
+	//ì™¸í˜• í”„ë¦¬íŒ¹
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	 UStaticMeshComponent* PlaneMesh; 
+	UStaticMeshComponent* PlaneMesh; 
 
-	//¿òÁ÷ÀÌ´Â À¯´Ö ½ºÅİ
-	 UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	 class UStatComponent* StatComponent;
+	//ì›€ì§ì´ëŠ” ìœ ë‹› ìŠ¤í…Ÿ
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UStatComponent* StatComponent;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> DynamicMaterial;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
+	float DissolveSpeed = 2.0f;
+
+	float CurrentDissolvePower = 1.0f;
+	bool bIsDissolvingIn = false;
+	bool bIsDissolvingOut = false;
+	bool bHasDissolveParameter = false;
+
+	virtual void OnDissolveOutFinished();
 
 public:	
 	virtual void Tick(float DeltaTime) override;

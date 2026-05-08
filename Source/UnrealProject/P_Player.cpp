@@ -18,6 +18,7 @@
 #include "SupportFireComponent.h"
 #include "HUDManager.h"
 #include "InputCoreTypes.h"
+#include "Components/WidgetComponent.h"
 
 AP_Player::AP_Player()
 {
@@ -45,6 +46,14 @@ AP_Player::AP_Player()
 	PlayerCameraRigComponent = CreateDefaultSubobject<UPlayerCameraRigComponent>(TEXT("PlayerCameraRigComp"));
 	PlayerRailMovementComponent = CreateDefaultSubobject<UPlayerRailMovementComponent>(TEXT("PlayerRailMovementComp"));
 	SupportFireComponent = CreateDefaultSubobject<USupportFireComponent>(TEXT("SupportFireComp"));
+
+	LeftFloatingUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("LeftFloatingUI"));
+	LeftFloatingUI->SetupAttachment(RootComponent);
+	LeftFloatingUI->SetVisibility(false);
+
+	RightFloatingUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("RightFloatingUI"));
+	RightFloatingUI->SetupAttachment(RootComponent);
+	RightFloatingUI->SetVisibility(false);
 }
 
 void AP_Player::BeginPlay()
@@ -153,6 +162,29 @@ void AP_Player::Tick(float DeltaTime)
 		if (PlayerCameraRigComponent)
 		{
 			PlayerCameraRigComponent->UpdateCameraPan(PlayerController, SpringArm, DeltaTime);
+		}
+	}
+
+	if (ASquadCraftActor* ActiveCraft = GetActiveCraft())
+	{
+		const FVector CraftLoc = ActiveCraft->GetActorLocation();
+		const FVector CraftForward = ActiveCraft->GetActorForwardVector();
+		const FVector CraftRight = ActiveCraft->GetActorRightVector();
+		const FRotator CraftRot = ActiveCraft->GetActorRotation();
+		const FQuat CraftQuat = CraftRot.Quaternion();
+
+		if (LeftFloatingUI && LeftFloatingUI->IsVisible())
+		{
+			const FVector LeftPos = CraftLoc + CraftQuat.RotateVector(LeftUIOffset);
+			LeftFloatingUI->SetWorldLocation(LeftPos);
+			LeftFloatingUI->SetWorldRotation(CraftRot + LeftUIRotation);
+		}
+
+		if (RightFloatingUI && RightFloatingUI->IsVisible())
+		{
+			const FVector RightPos = CraftLoc + CraftQuat.RotateVector(RightUIOffset);
+			RightFloatingUI->SetWorldLocation(RightPos);
+			RightFloatingUI->SetWorldRotation(CraftRot + RightUIRotation);
 		}
 	}
 

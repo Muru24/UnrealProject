@@ -142,6 +142,34 @@ FVector ASquadCraftActor::GetCurrentRelativeLocation() const
 	return GetRootComponent() ? GetRootComponent()->GetRelativeLocation() : FVector::ZeroVector;
 }
 
+void ASquadCraftActor::GetHealthInfo(float& OutCurrentHP, float& OutMaxHP) const
+{
+	if (StatComponent)
+	{
+		OutCurrentHP = StatComponent->Stats.unit.HP;
+		OutMaxHP = StatComponent->Stats.unit.MaxHP;
+	}
+	else
+	{
+		OutCurrentHP = 0.0f;
+		OutMaxHP = 0.0f;
+	}
+}
+
+void ASquadCraftActor::GetSkillCooldowns(float& OutBuffCooldown, float& OutOffensiveCooldown) const
+{
+	if (SkillComponent)
+	{
+		OutBuffCooldown = SkillComponent->GetBuffSkillCooldownRemaining();
+		OutOffensiveCooldown = SkillComponent->GetOffensiveSkillCooldownRemaining();
+	}
+	else
+	{
+		OutBuffCooldown = 0.0f;
+		OutOffensiveCooldown = 0.0f;
+	}
+}
+
 bool ASquadCraftActor::FireAt(const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn)
 {
 	return !bCraftDefeated && AttackComponent

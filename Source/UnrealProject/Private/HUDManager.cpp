@@ -19,6 +19,25 @@
 #include "SupportFireComponent.h"
 #include "TargetButtonWidget.h"
 
+AHUDManager::AHUDManager()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
+
+void AHUDManager::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (bMiniGameActive && GetWorld())
+	{
+		RemainingMiniGameTime = GetWorldTimerManager().GetTimerRemaining(MiniGameFailTimerHandle);
+	}
+	else
+	{
+		RemainingMiniGameTime = 0.0f;
+	}
+}
+
 void AHUDManager::BeginPlay()
 {
     Super::BeginPlay();
