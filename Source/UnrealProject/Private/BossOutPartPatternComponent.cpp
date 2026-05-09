@@ -7,6 +7,9 @@
 #include "LaserAttackComponent.h"
 #include "MissileBarrageActor.h"
 #include "Kismet/GameplayStatics.h"
+#include "UnrealProject/P_Player.h"
+#include "SquadCraftActor.h"
+#include "SquadRuntimeComponent.h"
 #include "TimerManager.h"
 
 UBossOutPartPatternComponent::UBossOutPartPatternComponent()
@@ -117,7 +120,7 @@ bool UBossOutPartPatternComponent::IsTemporarilyDisabled() const
 
 bool UBossOutPartPatternComponent::CanStartPattern() const
 {
-	return !IsTemporarilyDisabled();
+	return !IsTemporarilyDisabled() && IsValid(OwnerPart) && OwnerPart->IsDissolveInComplete();
 }
 
 void UBossOutPartPatternComponent::DisablePatternForDuration(float DisableDuration)
@@ -138,7 +141,33 @@ AActor* UBossOutPartPatternComponent::ResolveTargetActor(AActor* TargetActor) co
 		return TargetActor;
 	}
 
-	return UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+	AP_Player* PlayerPawn = Cast<AP_Player>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+	if (!IsValid(PlayerPawn))
+	{
+		return UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+	}
+
+	if (USquadRuntimeComponent* SquadRuntimeComponent = PlayerPawn->FindComponentByClass<USquadRuntimeComponent>())
+	{
+		TArray<ASquadCraftActor*> SquadCrafts;
+		SquadRuntimeComponent->GetAllCrafts(SquadCrafts);
+
+		TArray<ASquadCraftActor*> OperationalCrafts;
+		for (ASquadCraftActor* Craft : SquadCrafts)
+		{
+			if (IsValid(Craft) && Craft->IsOperational())
+			{
+				OperationalCrafts.Add(Craft);
+			}
+		}
+
+		if (!OperationalCrafts.IsEmpty())
+		{
+			return OperationalCrafts[FMath::RandRange(0, OperationalCrafts.Num() - 1)];
+		}
+	}
+
+	return PlayerPawn;
 }
 
 void UBossOutPartPatternComponent::BeginPatternLock(float LockDuration)

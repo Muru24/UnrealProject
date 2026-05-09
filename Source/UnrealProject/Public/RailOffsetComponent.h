@@ -21,10 +21,10 @@ public:
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail Offset")
-	float MaxHorizontalOffset = 350.0f;
+	float MaxHorizontalOffset = 380.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail Offset")
-	float MaxVerticalOffset = 220.0f;
+	float MaxVerticalOffset = 240.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail Offset")
 	float HorizontalMoveSpeed = 700.0f;
@@ -33,16 +33,25 @@ protected:
 	float VerticalMoveSpeed = 550.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail Offset")
-	float ReturnInterpSpeed = 5.0f;
+	float HorizontalInputInterpSpeed = 10.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail Offset")
+	float VerticalInputInterpSpeed = 8.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail Offset")
+	float HorizontalReturnInterpSpeed = 4.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail Offset")
+	float VerticalReturnInterpSpeed = 4.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail Offset|Tilt")
-	float MaxPitchTilt = 12.0f;
+	float MaxPitchTilt = 14.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail Offset|Tilt")
-	float MaxRollTilt = 22.0f;
+	float MaxRollTilt = 24.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rail Offset|Tilt")
-	float TiltResponseSpeed = 7.0f;
+	float TiltResponseSpeed = 8.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rail Offset")
 	FVector2D CurrentOffset = FVector2D::ZeroVector;

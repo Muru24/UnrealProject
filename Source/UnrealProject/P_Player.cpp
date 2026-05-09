@@ -25,6 +25,7 @@ AP_Player::AP_Player()
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
 	SpringArm->TargetArmLength = 700.0f;
+	SpringArm->bDoCollisionTest = false;
 	SpringArm->bEnableCameraLag = true;
 	SpringArm->CameraLagSpeed = 8.0f;
 	SpringArm->bEnableCameraRotationLag = true;
@@ -50,10 +51,6 @@ AP_Player::AP_Player()
 	LeftFloatingUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("LeftFloatingUI"));
 	LeftFloatingUI->SetupAttachment(RootComponent);
 	LeftFloatingUI->SetVisibility(false);
-
-	RightFloatingUI = CreateDefaultSubobject<UWidgetComponent>(TEXT("RightFloatingUI"));
-	RightFloatingUI->SetupAttachment(RootComponent);
-	RightFloatingUI->SetVisibility(false);
 }
 
 void AP_Player::BeginPlay()
@@ -113,7 +110,6 @@ void AP_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAction(TEXT("Fire"), IE_Pressed, this, &APawn_Template::Fire);
 	PlayerInputComponent->BindAction(TEXT("LockOn"), IE_Pressed, LockOn.Get(), &ULockOnComponent::TraceTarget);
 	PlayerInputComponent->BindAction(TEXT("TargetChange"), IE_Pressed, LockOn.Get(), &ULockOnComponent::ChangeTarget);
 	PlayerInputComponent->BindAction(TEXT("SwapLeft"), IE_Pressed, this, &AP_Player::SwapSquadLeft);
@@ -156,6 +152,7 @@ void AP_Player::Tick(float DeltaTime)
 		PlayerCameraRigComponent->UpdateCameraAnchor(SpringArm, GetActiveCraft(), false);
 		PlayerCameraRigComponent->UpdateCameraZoom(SpringArm, PathFollower && PathFollower->IsAccelerationActive(), DeltaTime);
 	}
+	HandleActiveAutoFire();
 	HandleSupportAutoFire();
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
@@ -178,13 +175,6 @@ void AP_Player::Tick(float DeltaTime)
 			const FVector LeftPos = CraftLoc + CraftQuat.RotateVector(LeftUIOffset);
 			LeftFloatingUI->SetWorldLocation(LeftPos);
 			LeftFloatingUI->SetWorldRotation(CraftRot + LeftUIRotation);
-		}
-
-		if (RightFloatingUI && RightFloatingUI->IsVisible())
-		{
-			const FVector RightPos = CraftLoc + CraftQuat.RotateVector(RightUIOffset);
-			RightFloatingUI->SetWorldLocation(RightPos);
-			RightFloatingUI->SetWorldRotation(CraftRot + RightUIRotation);
 		}
 	}
 
@@ -317,6 +307,17 @@ void AP_Player::HandleSupportAutoFire()
 	TArray<ASquadCraftActor*> SquadCrafts;
 	SquadRuntimeComponent->GetAllCrafts(SquadCrafts);
 	SupportFireComponent->HandleSupportAutoFire(SquadCrafts, LockOn, this);
+}
+
+void AP_Player::HandleActiveAutoFire()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (!PlayerAimFireComponent || !PlayerController)
+	{
+		return;
+	}
+
+	PlayerAimFireComponent->TryAutoFireActiveCraft(PlayerController, LockOn, GetActiveCraft(), this);
 }
 
 ASquadCraftActor* AP_Player::GetActiveCraft() const

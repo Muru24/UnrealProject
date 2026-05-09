@@ -5,8 +5,9 @@
 #include "Components/ActorComponent.h"
 #include "EnemyRushComponent.generated.h"
 
-class APawn;
 class ABulletBase;
+class AActor;
+class APawn;
 class UPrimitiveComponent;
 class USphereComponent;
 
@@ -16,6 +17,14 @@ enum class EEnemyRushBehaviorType : uint8
 	StraightRush,
 	DelayedHoming,
 	RangedBurst
+};
+
+UENUM()
+enum class EEnemyRushMoveState : uint8
+{
+	Chasing,
+	Rebounding,
+	Returning
 };
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -51,6 +60,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Rush", meta = (ClampMin = "0.0"))
 	float DelayedHomingDuration = 0.75f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Rush", meta = (ClampMin = "0.0"))
+	float ReboundDuration = 0.65f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Rush", meta = (ClampMin = "0.0"))
+	float ReboundSpeedMultiplier = 1.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Rush", meta = (ClampMin = "0.0"))
+	float ReturnSpeedMultiplier = 1.1f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Rush", meta = (ClampMin = "0.0"))
+	float ReturnAcceptanceRadius = 140.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Rush|Combat", meta = (ClampMin = "0.0"))
 	float ContactDamage = 15.0f;
 
@@ -79,18 +100,33 @@ private:
 	UPROPERTY()
 	TObjectPtr<USphereComponent> CollisionComponent;
 
+	UPROPERTY()
+	TObjectPtr<AActor> HomeAnchorActor;
+
+	UPROPERTY()
+	TObjectPtr<AActor> CurrentTargetActor;
+
 	float CurrentMoveSpeed = 0.0f;
 	float SpeedRampElapsedTime = 0.0f;
 	float BehaviorElapsedTime = 0.0f;
-	bool bHasTriggeredImpact = false;
 	bool bHasFiredBurst = false;
 	FVector InitialMoveDirection = FVector::ZeroVector;
+	FVector ReboundDirection = FVector::ZeroVector;
+	FVector InitialSpawnLocation = FVector::ZeroVector;
+	FVector HomeOffsetFromAnchor = FVector::ZeroVector;
+	float ReboundElapsedTime = 0.0f;
+	EEnemyRushMoveState MoveState = EEnemyRushMoveState::Chasing;
 
-	APawn* ResolveTargetPawn() const;
+	AActor* ResolveTargetActor() const;
+	FVector ResolveHomeLocation() const;
+	AActor* AcquireTargetActor();
 	void HandleImpact(AActor* OtherActor);
-	void UpdateMovementTowardTarget(APawn* TargetPawn, float DeltaTime);
-	bool TryFireBurst(APawn* TargetPawn);
-	void SpawnBurstProjectile(const FVector& SpawnLocation, const FRotator& SpawnRotation, APawn* TargetPawn);
+	void UpdateMovementTowardTarget(AActor* TargetActor, float DeltaTime);
+	void UpdateReboundMovement(float DeltaTime);
+	void UpdateReturnMovement(float DeltaTime);
+	void ResetChaseState();
+	bool TryFireBurst(AActor* TargetActor);
+	void SpawnBurstProjectile(const FVector& SpawnLocation, const FRotator& SpawnRotation, AActor* TargetActor);
 
 	UFUNCTION()
 	void OnCollisionOverlap(

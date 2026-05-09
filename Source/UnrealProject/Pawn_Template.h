@@ -46,11 +46,18 @@ protected:
 	bool bIsDissolvingIn = false;
 	bool bIsDissolvingOut = false;
 	bool bHasDissolveParameter = false;
+	bool bDissolveInFinished = false;
 
+	virtual void OnDissolveInFinished();
 	virtual void OnDissolveOutFinished();
 
 public:	
 	virtual void Tick(float DeltaTime) override;
+	UFUNCTION(BlueprintPure, Category = "Effect")
+	bool IsDissolveInComplete() const { return bDissolveInFinished || !bHasDissolveParameter; }
+
+	UFUNCTION(BlueprintCallable, Category = "Effect")
+	void StartDissolveOut();
 
 	virtual void Fire() {};
 };

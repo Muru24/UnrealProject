@@ -11,7 +11,13 @@ void UCraftAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	AutoFireCooldownRemaining = FMath::Max(0.0f, AutoFireCooldownRemaining - DeltaTime);
+	FireCooldownRemaining = FMath::Max(0.0f, FireCooldownRemaining - DeltaTime);
+	FireRateBuffRemaining = FMath::Max(0.0f, FireRateBuffRemaining - DeltaTime);
+
+	if (FireRateBuffRemaining <= 0.0f)
+	{
+		CurrentFireRateMultiplier = 1.0f;
+	}
 }
 
 void UCraftAttackComponent::ApplyAttackConfig(const FCraftAttackConfig& InAttackConfig)
@@ -28,37 +34,37 @@ void UCraftAttackComponent::ApplyAttackConfig(const FCraftAttackConfig& InAttack
 
 bool UCraftAttackComponent::FireFromOrigin(USceneComponent* FireOriginComponent, const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn)
 {
-	if (!FireOriginComponent || !AttackConfig.ProjectileClass || !GetWorld())
+	if (!FireOriginComponent || !AttackConfig.ProjectileClass || !GetWorld() || FireCooldownRemaining > 0.0f)
 	{
 		return false;
 	}
 
+	bool bFiredSuccessfully = false;
 	switch (AttackConfig.AttackPattern)
 	{
 	case ECraftAttackPattern::Burst:
-		return FireBurst(FireOriginComponent, TargetPoint, TargetActor, InstigatorPawn);
+		bFiredSuccessfully = FireBurst(FireOriginComponent, TargetPoint, TargetActor, InstigatorPawn);
+		break;
 	case ECraftAttackPattern::Spread:
-		return FireSpread(FireOriginComponent, TargetPoint, TargetActor, InstigatorPawn);
+		bFiredSuccessfully = FireSpread(FireOriginComponent, TargetPoint, TargetActor, InstigatorPawn);
+		break;
 	case ECraftAttackPattern::Single:
 	default:
-		return FireSingle(FireOriginComponent, TargetPoint, TargetActor, InstigatorPawn);
+		bFiredSuccessfully = FireSingle(FireOriginComponent, TargetPoint, TargetActor, InstigatorPawn);
+		break;
 	}
+
+	if (bFiredSuccessfully)
+	{
+		FireCooldownRemaining = GetCurrentFireInterval();
+	}
+
+	return bFiredSuccessfully;
 }
 
 bool UCraftAttackComponent::TryAutoFireFromOrigin(USceneComponent* FireOriginComponent, const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn)
 {
-	if (AutoFireCooldownRemaining > 0.0f)
-	{
-		return false;
-	}
-
-	if (!FireFromOrigin(FireOriginComponent, TargetPoint, TargetActor, InstigatorPawn))
-	{
-		return false;
-	}
-
-	AutoFireCooldownRemaining = AttackConfig.AutoFireInterval;
-	return true;
+	return FireFromOrigin(FireOriginComponent, TargetPoint, TargetActor, InstigatorPawn);
 }
 
 FRotator UCraftAttackComponent::BuildAimRotation(USceneComponent* FireOriginComponent, const FVector& TargetPoint) const
@@ -70,6 +76,18 @@ FRotator UCraftAttackComponent::BuildAimRotation(USceneComponent* FireOriginComp
 
 	const FVector AimDirection = (TargetPoint - FireOriginComponent->GetComponentLocation()).GetSafeNormal();
 	return AimDirection.Rotation();
+}
+
+void UCraftAttackComponent::ApplyTemporaryFireRateMultiplier(float InMultiplier, float InDuration)
+{
+	CurrentFireRateMultiplier = FMath::Max(1.0f, InMultiplier);
+	FireRateBuffRemaining = FMath::Max(0.0f, InDuration);
+}
+
+float UCraftAttackComponent::GetCurrentFireInterval() const
+{
+	const float SafeMultiplier = FMath::Max(1.0f, CurrentFireRateMultiplier);
+	return AttackConfig.AutoFireInterval / SafeMultiplier;
 }
 
 bool UCraftAttackComponent::SpawnProjectile(USceneComponent* FireOriginComponent, const FRotator& SpawnRotation, APawn* InstigatorPawn, float LateralOffset)

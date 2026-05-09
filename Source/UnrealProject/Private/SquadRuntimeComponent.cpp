@@ -79,8 +79,9 @@ void USquadRuntimeComponent::RefreshCraftStates(const USquadComponent* SquadLogi
 		{
 			const bool bIsCraftActive = IsCraftOperational(Craft) && Slot == SquadLogic->GetActiveSlot();
 			const FRotator TargetRotation = bIsCraftActive ? Craft->GetCurrentRelativeRotation() : FRotator::ZeroRotator;
+			const ESquadSlot DisplaySlot = ResolveDisplaySlotForCraft(Slot, SquadLogic);
 			Craft->SetActiveCraft(bIsCraftActive);
-			Craft->SetDesiredRelativeTransform(SquadLogic->GetSlotOffset(Slot), TargetRotation);
+			Craft->SetDesiredRelativeTransform(SquadLogic->GetSlotOffset(DisplaySlot), TargetRotation);
 			Craft->SetVisualTiltRotation(FRotator::ZeroRotator);
 		}
 	}
@@ -95,8 +96,9 @@ void USquadRuntimeComponent::ApplyActiveCraftVisualRotation(const USquadComponen
 
 	if (ASquadCraftActor* ActiveCraft = GetActiveCraft(SquadLogic))
 	{
+		const ESquadSlot DisplaySlot = ResolveDisplaySlotForCraft(SquadLogic->GetActiveSlot(), SquadLogic);
 		ActiveCraft->SetDesiredRelativeTransform(
-			SquadLogic->GetSlotOffset(SquadLogic->GetActiveSlot()),
+			SquadLogic->GetSlotOffset(DisplaySlot),
 			FRotator(ActiveCraftRotation.Pitch, 0.0f, ActiveCraftRotation.Roll));
 		ActiveCraft->SetVisualTiltRotation(FRotator::ZeroRotator);
 	}
@@ -207,4 +209,34 @@ void USquadRuntimeComponent::InitializeCraftVisual(ASquadCraftActor* Craft, USta
 bool USquadRuntimeComponent::IsCraftOperational(const ASquadCraftActor* Craft) const
 {
 	return IsValid(Craft) && Craft->IsOperational();
+}
+
+ESquadSlot USquadRuntimeComponent::ResolveDisplaySlotForCraft(ESquadSlot CraftSlot, const USquadComponent* SquadLogic) const
+{
+	if (!SquadLogic || IsCraftOperational(CenterCraft))
+	{
+		return CraftSlot;
+	}
+
+	ESquadSlot ReplacementSlot = ESquadSlot::Center;
+	const ESquadSlot ActiveSlot = SquadLogic->GetActiveSlot();
+	if (ActiveSlot != ESquadSlot::Center && IsCraftOperational(GetCraftForSlot(ActiveSlot)))
+	{
+		ReplacementSlot = ActiveSlot;
+	}
+	else if (IsCraftOperational(LeftCraft))
+	{
+		ReplacementSlot = ESquadSlot::Left;
+	}
+	else if (IsCraftOperational(RightCraft))
+	{
+		ReplacementSlot = ESquadSlot::Right;
+	}
+
+	if (CraftSlot == ReplacementSlot)
+	{
+		return ESquadSlot::Center;
+	}
+
+	return CraftSlot;
 }

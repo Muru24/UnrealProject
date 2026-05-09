@@ -1,244 +1,284 @@
-#include "SnakeSkillManager.h"
-#include "Snake_CompositeMaster.h"
-#include "SnakeBodyChargeComponent.h"
+﻿#include "SnakeSkillManager.h"
+
 #include "Components/ChildActorComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "UnrealProject/P_Player.h"
+#include "SnakeBodyChargeComponent.h"
+#include "Snake_CompositeMaster.h"
+#include "SquadCraftActor.h"
+#include "SquadRuntimeComponent.h"
+
+namespace
+{
+	AActor* ResolveRandomPlayerCraftTarget(UWorld* World)
+	{
+		AP_Player* PlayerPawn = World ? Cast<AP_Player>(UGameplayStatics::GetPlayerPawn(World, 0)) : nullptr;
+		if (!IsValid(PlayerPawn))
+		{
+			return World ? UGameplayStatics::GetPlayerPawn(World, 0) : nullptr;
+		}
+
+		if (USquadRuntimeComponent* SquadRuntimeComponent = PlayerPawn->FindComponentByClass<USquadRuntimeComponent>())
+		{
+			TArray<ASquadCraftActor*> SquadCrafts;
+			SquadRuntimeComponent->GetAllCrafts(SquadCrafts);
+
+			TArray<ASquadCraftActor*> OperationalCrafts;
+			for (ASquadCraftActor* Craft : SquadCrafts)
+			{
+				if (IsValid(Craft) && Craft->IsOperational())
+				{
+					OperationalCrafts.Add(Craft);
+				}
+			}
+
+			if (!OperationalCrafts.IsEmpty())
+			{
+				return OperationalCrafts[FMath::RandRange(0, OperationalCrafts.Num() - 1)];
+			}
+		}
+
+		return PlayerPawn;
+	}
+}
 
 USnakeSkillManager::USnakeSkillManager()
 {
-    PrimaryComponentTick.bCanEverTick = false;
-    SkillAutoTriggerTimer = 10.0f;
+	PrimaryComponentTick.bCanEverTick = false;
+	SkillAutoTriggerTimer = 10.0f;
 }
 
 void USnakeSkillManager::Update(float DeltaTime, const TArray<UChildActorComponent*>& Segments)
 {
-    ASnake_CompositeMaster* Master = Cast<ASnake_CompositeMaster>(GetOwner());
-    if (!Master) return;
+	ASnake_CompositeMaster* Master = Cast<ASnake_CompositeMaster>(GetOwner());
+	if (!Master)
+	{
+		return;
+	}
 
-    // 1. 자동 발동 타이머 (이동 중일 때만)
-    if (!Master->RunPatten && !bIsSkillActive)
-    {
-        SkillAutoTriggerTimer -= DeltaTime;
-        if (SkillAutoTriggerTimer <= 0.0f)
-        {
-            // 두 스킬 중 랜덤하게 발동
-            if (FMath::RandBool())
-            {
-                StartBodyChargeSkill(Segments);
-            }
-            else
-            {
-                StartLaserSkill(Segments);
-            }
-        }
-    }
+	if (!Master->RunPatten && !bIsSkillActive)
+	{
+		SkillAutoTriggerTimer -= DeltaTime;
+		if (SkillAutoTriggerTimer <= 0.0f)
+		{
+			if (FMath::RandBool())
+			{
+				StartBodyChargeSkill(Segments);
+			}
+			else
+			{
+				StartLaserSkill(Segments);
+			}
+		}
+	}
 
-    // 2. 스킬 활성 상태 관리
-    if (bIsSkillActive)
-    {
-        bool bAllPartsIdle = true;
-        bool bAllPartsFormed = true;
+	if (!bIsSkillActive)
+	{
+		return;
+	}
 
-    // 모든 마디 상태 체크
-    for (int32 i = 0; i < Segments.Num(); ++i)
-    {
-        if (Segments[i] && Segments[i]->GetChildActor())
-        {
-            if (USnakeBodyChargeComponent* SkillComp = Segments[i]->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
-            {
-                ESnakePartSkillState SkillState = SkillComp->GetCurrentState();
-                if (SkillState != ESnakePartSkillState::Idle) bAllPartsIdle = false;
-                
-                // Forming 단계에서는 마디가 스스로 목표에 도착했는지 확인
-                if (CurrentSkillPhase == ESnakeSkillState::Forming || CurrentSkillPhase == ESnakeSkillState::Laser_Preparing)
-                {
-                    if (!SkillComp->IsReachedFormation())
-                    {
-                        bAllPartsFormed = false;
-                    }
-                }
-            }
-        }
-    }
+	bool bAllPartsIdle = true;
+	bool bAllPartsFormed = true;
 
-        // 페이즈 전환 로직
-        if (CurrentSkillPhase == ESnakeSkillState::Forming && bAllPartsFormed)
-        {
-            // 모든 마디에게 발사 신호
-            for (UChildActorComponent* Part : Segments)
-            {
-                if (Part && Part->GetChildActor())
-                {
-                    if (USnakeBodyChargeComponent* SkillComp = Part->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
-                    {
-                        SkillComp->SignalLaunch();
-                    }
-                }
-            }
-            CurrentSkillPhase = ESnakeSkillState::Attacking;
-        }
-        else if (CurrentSkillPhase == ESnakeSkillState::Attacking && bAllPartsIdle)
-        {
-            // Charge 스킬 종료
-            bIsSkillActive = false;
-            CurrentSkillPhase = ESnakeSkillState::Idle;
-            Master->RunPatten = false; // 이동 재개
-            SkillAutoTriggerTimer = SkillAutoTriggerDelay;
-        }
-        else if (CurrentSkillPhase == ESnakeSkillState::Laser_Preparing)
-        {
-            // 모든 마디가 정렬될 때까지 대기
-            bool bAllFormed = true;
-            for (UChildActorComponent* Part : Segments)
-            {
-                if (Part && Part->GetChildActor())
-                {
-                    if (USnakeBodyChargeComponent* SkillComp = Part->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
-                    {
-                        if (SkillComp->GetCurrentState() != ESnakePartSkillState::Forming) continue;
-                        
-                        // 대략적인 위치 도달 체크
-                        if (FVector::Dist(Part->GetChildActor()->GetActorLocation(), Part->GetComponentLocation()) > 100.0f)
-                        {
-                            // bAllFormed = false; // 일단은 시간 기반으로 넘어가거나 정교한 체크 가능
-                        }
-                    }
-                }
-            }
+	for (UChildActorComponent* Segment : Segments)
+	{
+		if (!Segment || !Segment->GetChildActor())
+		{
+			continue;
+		}
 
-            StateTimer -= DeltaTime;
-            if (StateTimer <= 0.0f)
-            {
-                CurrentSkillPhase = ESnakeSkillState::Laser_Firing;
-                CurrentFiringIndex = 0;
-                SequentialTimer = 0.0f;
-                StateTimer = LaserDuration; // 전체 지속 시간
-            }
-        }
-        else if (CurrentSkillPhase == ESnakeSkillState::Laser_Firing)
-        {
-            // 순차적 발사 처리
-            if (CurrentFiringIndex < Segments.Num())
-            {
-                SequentialTimer -= DeltaTime;
-                if (SequentialTimer <= 0.0f)
-                {
-                    if (Segments[CurrentFiringIndex] && Segments[CurrentFiringIndex]->GetChildActor())
-                    {
-                        if (USnakeBodyChargeComponent* SkillComp = Segments[CurrentFiringIndex]->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
-                        {
-                            SkillComp->FireLaser();
-                        }
-                    }
-                    CurrentFiringIndex++;
-                    SequentialTimer = LaunchDelayBetweenParts; // 0.2s
-                }
-            }
+		if (USnakeBodyChargeComponent* SkillComp = Segment->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
+		{
+			const ESnakePartSkillState SkillState = SkillComp->GetCurrentState();
+			if (SkillState != ESnakePartSkillState::Idle)
+			{
+				bAllPartsIdle = false;
+			}
 
-            // 전체 발사 지속 시간 관리
-            StateTimer -= DeltaTime;
-            if (StateTimer <= 0.0f && CurrentFiringIndex >= Segments.Num())
-            {
-                // 모든 마디 발사 중지
-                for (UChildActorComponent* Part : Segments)
-                {
-                    if (Part && Part->GetChildActor())
-                    {
-                        if (USnakeBodyChargeComponent* SkillComp = Part->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
-                        {
-                            SkillComp->StopLaser();
-                        }
-                    }
-                }
-                
-                bIsSkillActive = false;
-                CurrentSkillPhase = ESnakeSkillState::Idle;
-                Master->RunPatten = false;
-                SkillAutoTriggerTimer = SkillAutoTriggerDelay;
-            }
-        }
-    }
+			if ((CurrentSkillPhase == ESnakeSkillState::Forming || CurrentSkillPhase == ESnakeSkillState::Laser_Preparing) &&
+				!SkillComp->IsReachedFormation())
+			{
+				bAllPartsFormed = false;
+			}
+		}
+	}
+
+	if (CurrentSkillPhase == ESnakeSkillState::Forming && bAllPartsFormed)
+	{
+		for (UChildActorComponent* Segment : Segments)
+		{
+			if (!Segment || !Segment->GetChildActor())
+			{
+				continue;
+			}
+
+			if (USnakeBodyChargeComponent* SkillComp = Segment->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
+			{
+				SkillComp->SignalLaunch();
+			}
+		}
+
+		CurrentSkillPhase = ESnakeSkillState::Attacking;
+	}
+	else if (CurrentSkillPhase == ESnakeSkillState::Attacking && bAllPartsIdle)
+	{
+		bIsSkillActive = false;
+		CurrentSkillPhase = ESnakeSkillState::Idle;
+		Master->RunPatten = false;
+		SkillAutoTriggerTimer = SkillAutoTriggerDelay;
+	}
+	else if (CurrentSkillPhase == ESnakeSkillState::Laser_Preparing)
+	{
+		StateTimer -= DeltaTime;
+		if (StateTimer <= 0.0f)
+		{
+			CurrentSkillPhase = ESnakeSkillState::Laser_Firing;
+			CurrentFiringIndex = 0;
+			SequentialTimer = 0.0f;
+			StateTimer = LaserDuration;
+		}
+	}
+	else if (CurrentSkillPhase == ESnakeSkillState::Laser_Firing)
+	{
+		if (CurrentFiringIndex < Segments.Num())
+		{
+			SequentialTimer -= DeltaTime;
+			if (SequentialTimer <= 0.0f)
+			{
+				if (Segments[CurrentFiringIndex] && Segments[CurrentFiringIndex]->GetChildActor())
+				{
+					if (USnakeBodyChargeComponent* SkillComp = Segments[CurrentFiringIndex]->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
+					{
+						SkillComp->FireLaser();
+					}
+				}
+
+				CurrentFiringIndex++;
+				SequentialTimer = LaunchDelayBetweenParts;
+			}
+		}
+
+		StateTimer -= DeltaTime;
+		if (StateTimer <= 0.0f && CurrentFiringIndex >= Segments.Num())
+		{
+			for (UChildActorComponent* Segment : Segments)
+			{
+				if (!Segment || !Segment->GetChildActor())
+				{
+					continue;
+				}
+
+				if (USnakeBodyChargeComponent* SkillComp = Segment->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
+				{
+					SkillComp->StopLaser();
+				}
+			}
+
+			bIsSkillActive = false;
+			CurrentSkillPhase = ESnakeSkillState::Idle;
+			Master->RunPatten = false;
+			SkillAutoTriggerTimer = SkillAutoTriggerDelay;
+		}
+	}
 }
 
 void USnakeSkillManager::StartBodyChargeSkill(const TArray<UChildActorComponent*>& Segments)
 {
-    ASnake_CompositeMaster* Master = Cast<ASnake_CompositeMaster>(GetOwner());
-    if (!Master || Segments.Num() == 0 || bIsSkillActive) return;
+	ASnake_CompositeMaster* Master = Cast<ASnake_CompositeMaster>(GetOwner());
+	if (!Master || Segments.Num() == 0 || bIsSkillActive)
+	{
+		return;
+	}
 
-    bIsSkillActive = true;
-    Master->RunPatten = true; // 이동 멈춤
-    CurrentSkillPhase = ESnakeSkillState::Forming;
+	AActor* TargetActor = ResolveRandomPlayerCraftTarget(GetWorld());
+	if (!IsValid(TargetActor))
+	{
+		return;
+	}
 
-    for (int32 i = 0; i < Segments.Num(); ++i)
-    {
-        if (Segments[i] && Segments[i]->GetChildActor())
-        {
-            if (USnakeBodyChargeComponent* SkillComp = Segments[i]->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
-            {
-                float AngleRad = FMath::DegreesToRadians((360.0f / FMath::Max(1, Segments.Num())) * i);
-                FVector CircleOffset = FVector(FMath::Cos(AngleRad) * FormationRadius, FMath::Sin(AngleRad) * FormationRadius, 0.0f);
-                FVector TargetFormPos = Master->GetActorLocation() + Master->GetActorRotation().RotateVector(CircleOffset);
-                
-                SkillComp->InitSkillSequence(UGameplayStatics::GetPlayerPawn(GetWorld(), 0), TargetFormPos, Master->GetActorRotation(), i * LaunchDelayBetweenParts);
-            }
-        }
-    }
+	bIsSkillActive = true;
+	Master->RunPatten = true;
+	CurrentSkillPhase = ESnakeSkillState::Forming;
+
+	for (int32 i = 0; i < Segments.Num(); ++i)
+	{
+		if (!Segments[i] || !Segments[i]->GetChildActor())
+		{
+			continue;
+		}
+
+		if (USnakeBodyChargeComponent* SkillComp = Segments[i]->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
+		{
+			const float AngleRad = FMath::DegreesToRadians((360.0f / FMath::Max(1, Segments.Num())) * i);
+			const FVector CircleOffset(FMath::Cos(AngleRad) * FormationRadius, FMath::Sin(AngleRad) * FormationRadius, 0.0f);
+			const FVector TargetFormPos = Master->GetActorLocation() + Master->GetActorRotation().RotateVector(CircleOffset);
+			SkillComp->InitSkillSequence(TargetActor, TargetFormPos, Master->GetActorRotation(), i * LaunchDelayBetweenParts);
+		}
+	}
 }
 
 void USnakeSkillManager::StopAllSkills(const TArray<UChildActorComponent*>& Segments)
 {
-    bIsSkillActive = false;
-    CurrentSkillPhase = ESnakeSkillState::Idle;
-    StateTimer = 0.0f;
-    SequentialTimer = 0.0f;
-    CurrentFiringIndex = 0;
-    SkillAutoTriggerTimer = SkillAutoTriggerDelay;
+	bIsSkillActive = false;
+	CurrentSkillPhase = ESnakeSkillState::Idle;
+	StateTimer = 0.0f;
+	SequentialTimer = 0.0f;
+	CurrentFiringIndex = 0;
+	SkillAutoTriggerTimer = SkillAutoTriggerDelay;
 
-    if (ASnake_CompositeMaster* Master = Cast<ASnake_CompositeMaster>(GetOwner()))
-    {
-        Master->RunPatten = false;
-    }
+	if (ASnake_CompositeMaster* Master = Cast<ASnake_CompositeMaster>(GetOwner()))
+	{
+		Master->RunPatten = false;
+	}
 
-    for (UChildActorComponent* Segment : Segments)
-    {
-        if (!Segment || !Segment->GetChildActor())
-        {
-            continue;
-        }
+	for (UChildActorComponent* Segment : Segments)
+	{
+		if (!Segment || !Segment->GetChildActor())
+		{
+			continue;
+		}
 
-        if (USnakeBodyChargeComponent* SkillComp = Segment->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
-        {
-            SkillComp->CancelSkillSequence();
-        }
-    }
+		if (USnakeBodyChargeComponent* SkillComp = Segment->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
+		{
+			SkillComp->CancelSkillSequence();
+		}
+	}
 }
 
 void USnakeSkillManager::StartLaserSkill(const TArray<UChildActorComponent*>& Segments)
 {
-    ASnake_CompositeMaster* Master = Cast<ASnake_CompositeMaster>(GetOwner());
-    if (!Master || Segments.Num() == 0 || bIsSkillActive) return;
+	ASnake_CompositeMaster* Master = Cast<ASnake_CompositeMaster>(GetOwner());
+	if (!Master || Segments.Num() == 0 || bIsSkillActive)
+	{
+		return;
+	}
 
-    bIsSkillActive = true;
-    Master->RunPatten = true; 
-    CurrentSkillPhase = ESnakeSkillState::Laser_Preparing;
-    StateTimer = LaserPrepareTime;
+	AActor* TargetActor = ResolveRandomPlayerCraftTarget(GetWorld());
+	if (!IsValid(TargetActor))
+	{
+		return;
+	}
 
-    AActor* Player = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
-    FVector BaseLoc = Master->GetActorLocation() + FVector(0, 0, LaserHeightOffset);
-    FVector RightDir = Master->GetActorRightVector();
+	bIsSkillActive = true;
+	Master->RunPatten = true;
+	CurrentSkillPhase = ESnakeSkillState::Laser_Preparing;
+	StateTimer = LaserPrepareTime;
 
-    for (int32 i = 0; i < Segments.Num(); ++i)
-    {
-        if (Segments[i] && Segments[i]->GetChildActor())
-        {
-            if (USnakeBodyChargeComponent* SkillComp = Segments[i]->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
-            {
-                // 가로 일자 대형 위치 계산 (머리 기준 좌우로 정렬)
-                float Offset = (i - (Segments.Num() / 2.0f)) * LaserLineSpacing;
-                FVector TargetPos = BaseLoc + (RightDir * Offset);
-                
-                SkillComp->PrepareLaser(Player, TargetPos, Master->GetActorRotation());
-            }
-        }
-    }
+	const FVector BaseLoc = Master->GetActorLocation() + FVector(0.0f, 0.0f, LaserHeightOffset);
+	const FVector RightDir = Master->GetActorRightVector();
+
+	for (int32 i = 0; i < Segments.Num(); ++i)
+	{
+		if (!Segments[i] || !Segments[i]->GetChildActor())
+		{
+			continue;
+		}
+
+		if (USnakeBodyChargeComponent* SkillComp = Segments[i]->GetChildActor()->FindComponentByClass<USnakeBodyChargeComponent>())
+		{
+			const float Offset = (i - (Segments.Num() / 2.0f)) * LaserLineSpacing;
+			const FVector TargetPos = BaseLoc + (RightDir * Offset);
+			SkillComp->PrepareLaser(TargetActor, TargetPos, Master->GetActorRotation());
+		}
+	}
 }

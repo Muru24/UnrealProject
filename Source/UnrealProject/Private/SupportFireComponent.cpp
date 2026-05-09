@@ -51,12 +51,37 @@ AActor* USupportFireComponent::GetSupportAutoFireTargetForCraft(const ASquadCraf
 		{
 			return LockOnComponent->GetCurrentTarget();
 		}
-		return GetNearestEnemy(GetOwner() ? GetOwner()->GetActorLocation() : FVector::ZeroVector);
+		if (AActor* PriorityEnemy = GetPriorityEnemyInRange(Craft ? Craft->GetActorLocation() : FVector::ZeroVector))
+		{
+			return PriorityEnemy;
+		}
+		return GetRandomEnemy();
 
 	case ECraftCombatRole::SupportRapid:
 	default:
-		return GetNearestEnemy(Craft->GetActorLocation());
+		if (LockOnComponent && LockOnComponent->IsLockOnEnabled() && LockOnComponent->GetCurrentTarget())
+		{
+			return LockOnComponent->GetCurrentTarget();
+		}
+		if (AActor* PriorityEnemy = GetPriorityEnemyInRange(Craft->GetActorLocation()))
+		{
+			return PriorityEnemy;
+		}
+		return GetRandomEnemy();
 	}
+}
+
+AActor* USupportFireComponent::GetPriorityEnemyInRange(const FVector& Origin) const
+{
+	AActor* NearestEnemy = GetNearestEnemy(Origin);
+	if (!NearestEnemy)
+	{
+		return nullptr;
+	}
+
+	return FVector::DistSquared(Origin, NearestEnemy->GetActorLocation()) <= FMath::Square(PriorityTargetRange)
+		? NearestEnemy
+		: nullptr;
 }
 
 AActor* USupportFireComponent::GetNearestEnemy(const FVector& Origin) const
@@ -88,6 +113,35 @@ AActor* USupportFireComponent::GetNearestEnemy(const FVector& Origin) const
 		}
 
 		return BestTarget;
+	}
+
+	return nullptr;
+}
+
+AActor* USupportFireComponent::GetRandomEnemy() const
+{
+	if (!GetWorld())
+	{
+		return nullptr;
+	}
+
+	if (UEnemyManager* EnemySubsystem = GetWorld()->GetSubsystem<UEnemyManager>())
+	{
+		TArray<APawn*> ValidEnemies;
+		for (APawn* Enemy : EnemySubsystem->GetEnemys())
+		{
+			if (IsValid(Enemy) && Enemy != GetOwner())
+			{
+				ValidEnemies.Add(Enemy);
+			}
+		}
+
+		if (ValidEnemies.IsEmpty())
+		{
+			return nullptr;
+		}
+
+		return ValidEnemies[FMath::RandRange(0, ValidEnemies.Num() - 1)];
 	}
 
 	return nullptr;

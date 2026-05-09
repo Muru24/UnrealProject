@@ -30,7 +30,7 @@ protected:
 	float CameraAnchorFollowSpeed = 10.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
-	FVector CameraAnchorInfluence = FVector(0.0f, 1.0f, 0.25f);
+	FVector CameraAnchorInfluence = FVector(0.0f, 0.35f, 0.25f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera|Zoom")
 	float AccelerationZoomOutDistance = 80.0f;

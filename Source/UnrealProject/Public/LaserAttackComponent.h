@@ -81,6 +81,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Laser|Config")
 	float BeamExtraDistance = 500.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Laser|Damage", meta = (ClampMin = "0.0"))
+	float AttackDamage = 12.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Laser|Damage", meta = (ClampMin = "0.0"))
+	float AttackDamageTickInterval = 0.15f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Laser|Damage", meta = (ClampMin = "0.0"))
+	float AttackTraceRadius = 45.0f;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Laser|Runtime")
 	TObjectPtr<ABeamEffectActor> ActiveBeamActor;
 

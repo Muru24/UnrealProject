@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#include "Pawn_Template.h"
+﻿#include "Pawn_Template.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SphereComponent.h"
@@ -20,7 +18,6 @@ APawn_Template::APawn_Template()
 	PlaneMesh->SetupAttachment(RootComponent);
 	PlaneMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
-	
 }
 
 void APawn_Template::Tick(float DeltaTime)
@@ -36,6 +33,8 @@ void APawn_Template::Tick(float DeltaTime)
 			if (CurrentDissolvePower <= -1.0f)
 			{
 				bIsDissolvingIn = false;
+				bDissolveInFinished = true;
+				OnDissolveInFinished();
 			}
 		}
 		else if (bIsDissolvingOut)
@@ -64,6 +63,7 @@ void APawn_Template::BeginPlay()
 			if (DynamicMaterial->GetScalarParameterValue(TEXT("DissovePower"), DefaultValue))
 			{
 				bHasDissolveParameter = true;
+				bDissolveInFinished = false;
 				CurrentDissolvePower = 1.0f;
 				DynamicMaterial->SetScalarParameterValue(TEXT("DissovePower"), CurrentDissolvePower);
 				bIsDissolvingIn = true;
@@ -71,16 +71,39 @@ void APawn_Template::BeginPlay()
 			else
 			{
 				bHasDissolveParameter = false;
+				bDissolveInFinished = true;
 			}
 		}
+		else
+		{
+			bHasDissolveParameter = false;
+			bDissolveInFinished = true;
+		}
 	}
+	else
+	{
+		bHasDissolveParameter = false;
+		bDissolveInFinished = true;
+	}
+}
+
+void APawn_Template::OnDissolveInFinished()
+{
 }
 
 void APawn_Template::OnDissolveOutFinished()
 {
-	// 기본 구현: 파생 클래스에서 오버라이드 가능
 }
 
+void APawn_Template::StartDissolveOut()
+{
+	if (!bHasDissolveParameter || !DynamicMaterial)
+	{
+		OnDissolveOutFinished();
+		return;
+	}
 
-
-
+	bIsDissolvingIn = false;
+	bIsDissolvingOut = true;
+	bDissolveInFinished = false;
+}

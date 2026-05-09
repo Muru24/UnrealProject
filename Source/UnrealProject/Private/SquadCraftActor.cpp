@@ -20,6 +20,7 @@ ASquadCraftActor::ASquadCraftActor()
 	CollisionComponent->SetSphereRadius(90.0f);
 	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CollisionComponent->SetCollisionProfileName(TEXT("Pawn"));
+	CollisionComponent->SetGenerateOverlapEvents(true);
 	CollisionComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 
 	VisualRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VisualRoot"));
@@ -179,7 +180,7 @@ bool ASquadCraftActor::FireAt(const FVector& TargetPoint, AActor* TargetActor, A
 
 bool ASquadCraftActor::TryAutoFireAt(const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn)
 {
-	return !bCraftDefeated && !bIsActiveCraft && AttackComponent
+	return !bCraftDefeated && AttackComponent
 		? AttackComponent->TryAutoFireFromOrigin(FireOrigin, TargetPoint, TargetActor, InstigatorPawn)
 		: false;
 }

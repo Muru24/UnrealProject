@@ -21,7 +21,26 @@ void ABossCore::BeginPlay()
 		StatComponent->OnHpChanged.AddDynamic(this, &ABossCore::HandleHpChanged);
 	}
 
+	if (IsDissolveInComplete())
+	{
+		SpawnSnakeActor();
+	}
+}
+
+void ABossCore::OnDissolveInFinished()
+{
+	Super::OnDissolveInFinished();
+	SpawnSnakeActor();
+}
+
+void ABossCore::SpawnSnakeActor()
+{
 	if (!SnakeClass)
+	{
+		return;
+	}
+
+	if (SpawnedSnake)
 	{
 		return;
 	}
@@ -77,6 +96,20 @@ void ABossCore::HandleBossDefeated()
 		SpawnedSnake->SetActorTickEnabled(false);
 	}
 
+	if (bHasDissolveParameter && DynamicMaterial)
+	{
+		StartDissolveOut();
+	}
+	else
+	{
+		RequestBossDeathSequence();
+		RequestGameClear();
+	}
+}
+
+void ABossCore::OnDissolveOutFinished()
+{
+	Super::OnDissolveOutFinished();
 	RequestBossDeathSequence();
 	RequestGameClear();
 }

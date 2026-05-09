@@ -78,7 +78,7 @@ AActor* USkillSummonPanel::ResolveTargetActor(AActor* SourceActor, AActor* Reque
 		return LockOnTarget;
 	}
 
-	return ResolveNearestEnemy(SourceActor);
+	return ResolveRandomEnemy(SourceActor);
 }
 
 AActor* USkillSummonPanel::ResolveLockOnTarget(AActor* SourceActor) const
@@ -105,7 +105,7 @@ AActor* USkillSummonPanel::ResolveLockOnTarget(AActor* SourceActor) const
 	return nullptr;
 }
 
-AActor* USkillSummonPanel::ResolveNearestEnemy(AActor* SourceActor) const
+AActor* USkillSummonPanel::ResolveRandomEnemy(AActor* SourceActor) const
 {
 	if (!IsValid(SourceActor))
 	{
@@ -120,8 +120,7 @@ AActor* USkillSummonPanel::ResolveNearestEnemy(AActor* SourceActor) const
 	}
 
 	const TArray<APawn*>& EnemyList = EnemyManager->GetEnemys();
-	AActor* NearestEnemy = nullptr;
-	float BestDistanceSquared = TNumericLimits<float>::Max();
+	TArray<APawn*> ValidEnemies;
 
 	for (APawn* EnemyPawn : EnemyList)
 	{
@@ -130,13 +129,13 @@ AActor* USkillSummonPanel::ResolveNearestEnemy(AActor* SourceActor) const
 			continue;
 		}
 
-		const float DistanceSquared = FVector::DistSquared(SourceActor->GetActorLocation(), EnemyPawn->GetActorLocation());
-		if (DistanceSquared < BestDistanceSquared)
-		{
-			BestDistanceSquared = DistanceSquared;
-			NearestEnemy = EnemyPawn;
-		}
+		ValidEnemies.Add(EnemyPawn);
 	}
 
-	return NearestEnemy;
+	if (ValidEnemies.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	return ValidEnemies[FMath::RandRange(0, ValidEnemies.Num() - 1)];
 }

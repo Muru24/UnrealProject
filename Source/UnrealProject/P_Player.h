@@ -62,20 +62,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI|Floating")
 	TObjectPtr<UWidgetComponent> LeftFloatingUI;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI|Floating")
-	TObjectPtr<UWidgetComponent> RightFloatingUI;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|Floating")
 	FVector LeftUIOffset = FVector(300.0f, -150.0f, 0.0f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|Floating")
 	FRotator LeftUIRotation = FRotator::ZeroRotator;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|Floating")
-	FVector RightUIOffset = FVector(300.0f, 150.0f, 0.0f);
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|Floating")
-	FRotator RightUIRotation = FRotator::ZeroRotator;
 
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
@@ -92,6 +83,7 @@ protected:
 	void TriggerOffensiveSkill();
 	void TriggerBuffSkill();
 	void UpdateAutoBuffSkill(float DeltaTime);
+	void HandleActiveAutoFire();
 	void HandleSupportAutoFire();
 	void HandleSquadCraftDefeated(ASquadCraftActor* DefeatedCraft);
 	ASquadCraftActor* GetActiveCraft() const;

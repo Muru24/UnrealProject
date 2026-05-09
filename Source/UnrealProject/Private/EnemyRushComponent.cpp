@@ -1,10 +1,14 @@
 #include "EnemyRushComponent.h"
 
+#include "UnrealProject/P_Player.h"
+#include "UnrealProject/Pawn_Template.h"
 #include "BulletBase.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "SquadCraftActor.h"
+#include "SquadRuntimeComponent.h"
 #include "StatComponent.h"
 
 UEnemyRushComponent::UEnemyRushComponent()
@@ -25,19 +29,28 @@ void UEnemyRushComponent::BeginPlay()
 	CollisionComponent = OwnerPawn->FindComponentByClass<USphereComponent>();
 	if (CollisionComponent)
 	{
+		CollisionComponent->SetGenerateOverlapEvents(true);
 		CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &UEnemyRushComponent::OnCollisionOverlap);
 		CollisionComponent->OnComponentHit.AddDynamic(this, &UEnemyRushComponent::OnCollisionHit);
 	}
 
+	HomeAnchorActor = OwnerPawn->GetOwner();
+	InitialSpawnLocation = OwnerPawn->GetActorLocation();
+	HomeOffsetFromAnchor = IsValid(HomeAnchorActor)
+		? (InitialSpawnLocation - HomeAnchorActor->GetActorLocation())
+		: FVector::ZeroVector;
+
 	CurrentMoveSpeed = FMath::Max(0.0f, MoveSpeed);
 	SpeedRampElapsedTime = 0.0f;
 	BehaviorElapsedTime = 0.0f;
-	bHasTriggeredImpact = false;
 	bHasFiredBurst = false;
+	ReboundElapsedTime = 0.0f;
+	MoveState = EEnemyRushMoveState::Chasing;
+	CurrentTargetActor = nullptr;
 
-	if (APawn* TargetPawn = ResolveTargetPawn())
+	if (AActor* TargetActor = AcquireTargetActor())
 	{
-		InitialMoveDirection = (TargetPawn->GetActorLocation() - OwnerPawn->GetActorLocation()).GetSafeNormal();
+		InitialMoveDirection = (TargetActor->GetActorLocation() - OwnerPawn->GetActorLocation()).GetSafeNormal();
 	}
 
 	if (InitialMoveDirection.IsNearlyZero())
@@ -50,13 +63,33 @@ void UEnemyRushComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (!IsValid(OwnerPawn) || bHasTriggeredImpact)
+	if (!IsValid(OwnerPawn))
 	{
 		return;
 	}
 
-	APawn* TargetPawn = ResolveTargetPawn();
-	if (!IsValid(TargetPawn))
+	if (const APawn_Template* OwnerPawnTemplate = Cast<APawn_Template>(OwnerPawn))
+	{
+		if (!OwnerPawnTemplate->IsDissolveInComplete())
+		{
+			return;
+		}
+	}
+
+	if (MoveState == EEnemyRushMoveState::Rebounding)
+	{
+		UpdateReboundMovement(DeltaTime);
+		return;
+	}
+
+	if (MoveState == EEnemyRushMoveState::Returning)
+	{
+		UpdateReturnMovement(DeltaTime);
+		return;
+	}
+
+	AActor* TargetActor = AcquireTargetActor();
+	if (!IsValid(TargetActor))
 	{
 		return;
 	}
@@ -70,10 +103,10 @@ void UEnemyRushComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	if (BehaviorType == EEnemyRushBehaviorType::RangedBurst)
 	{
-		const float DistanceToTarget = FVector::Dist(OwnerPawn->GetActorLocation(), TargetPawn->GetActorLocation());
+		const float DistanceToTarget = FVector::Dist(OwnerPawn->GetActorLocation(), TargetActor->GetActorLocation());
 		if (!bHasFiredBurst && DistanceToTarget <= BurstTriggerDistance)
 		{
-			if (TryFireBurst(TargetPawn))
+			if (TryFireBurst(TargetActor))
 			{
 				bHasFiredBurst = true;
 				OwnerPawn->Destroy();
@@ -82,37 +115,91 @@ void UEnemyRushComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 		}
 	}
 
-	UpdateMovementTowardTarget(TargetPawn, DeltaTime);
+	UpdateMovementTowardTarget(TargetActor, DeltaTime);
 }
 
-APawn* UEnemyRushComponent::ResolveTargetPawn() const
+AActor* UEnemyRushComponent::ResolveTargetActor() const
 {
-	return UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+	AP_Player* PlayerPawn = Cast<AP_Player>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+	if (!PlayerPawn)
+	{
+		return UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+	}
+
+	if (USquadRuntimeComponent* SquadRuntime = PlayerPawn->FindComponentByClass<USquadRuntimeComponent>())
+	{
+		TArray<ASquadCraftActor*> AllCrafts;
+		SquadRuntime->GetAllCrafts(AllCrafts);
+
+		TArray<ASquadCraftActor*> ValidCrafts;
+		for (ASquadCraftActor* Craft : AllCrafts)
+		{
+			if (IsValid(Craft) && Craft->IsOperational())
+			{
+				ValidCrafts.Add(Craft);
+			}
+		}
+
+		if (!ValidCrafts.IsEmpty())
+		{
+			return ValidCrafts[FMath::RandRange(0, ValidCrafts.Num() - 1)];
+		}
+	}
+
+	return PlayerPawn;
+}
+
+AActor* UEnemyRushComponent::AcquireTargetActor()
+{
+	if (IsValid(CurrentTargetActor))
+	{
+		if (const ASquadCraftActor* Craft = Cast<ASquadCraftActor>(CurrentTargetActor.Get()))
+		{
+			if (Craft->IsOperational())
+			{
+				return CurrentTargetActor.Get();
+			}
+		}
+		else
+		{
+			return CurrentTargetActor.Get();
+		}
+	}
+
+	CurrentTargetActor = ResolveTargetActor();
+	return CurrentTargetActor.Get();
 }
 
 void UEnemyRushComponent::HandleImpact(AActor* OtherActor)
 {
-	if (bHasTriggeredImpact || !IsValid(OwnerPawn) || !IsValid(OtherActor) || OtherActor == OwnerPawn)
+	if (MoveState != EEnemyRushMoveState::Chasing || !IsValid(OwnerPawn) || !IsValid(OtherActor) || OtherActor == OwnerPawn)
 	{
 		return;
 	}
 
-	APawn* TargetPawn = ResolveTargetPawn();
-	if (OtherActor != TargetPawn)
+	UStatComponent* TargetStatComponent = OtherActor->FindComponentByClass<UStatComponent>();
+	if (!TargetStatComponent)
 	{
 		return;
 	}
 
-	if (UStatComponent* TargetStatComponent = OtherActor->FindComponentByClass<UStatComponent>())
+	TargetStatComponent->ApplyDamage(ContactDamage);
+
+	ReboundDirection = OwnerPawn->GetActorForwardVector();
+	if (ReboundDirection.IsNearlyZero())
 	{
-		TargetStatComponent->ApplyDamage(ContactDamage);
+		ReboundDirection = (OwnerPawn->GetActorLocation() - OtherActor->GetActorLocation()).GetSafeNormal();
+	}
+	if (ReboundDirection.IsNearlyZero())
+	{
+		ReboundDirection = FVector::ForwardVector;
 	}
 
-	bHasTriggeredImpact = true;
-	OwnerPawn->Destroy();
+	MoveState = EEnemyRushMoveState::Rebounding;
+	ReboundElapsedTime = 0.0f;
 }
 
-void UEnemyRushComponent::UpdateMovementTowardTarget(APawn* TargetPawn, float DeltaTime)
+void UEnemyRushComponent::UpdateMovementTowardTarget(AActor* TargetActor, float DeltaTime)
 {
 	FVector DesiredDirection = FVector::ZeroVector;
 	if (BehaviorType == EEnemyRushBehaviorType::DelayedHoming && BehaviorElapsedTime < DelayedHomingDuration)
@@ -121,7 +208,7 @@ void UEnemyRushComponent::UpdateMovementTowardTarget(APawn* TargetPawn, float De
 	}
 	else
 	{
-		DesiredDirection = (TargetPawn->GetActorLocation() - OwnerPawn->GetActorLocation()).GetSafeNormal();
+		DesiredDirection = (TargetActor->GetActorLocation() - OwnerPawn->GetActorLocation()).GetSafeNormal();
 	}
 
 	if (!DesiredDirection.IsNearlyZero())
@@ -141,14 +228,90 @@ void UEnemyRushComponent::UpdateMovementTowardTarget(APawn* TargetPawn, float De
 	}
 }
 
-bool UEnemyRushComponent::TryFireBurst(APawn* TargetPawn)
+FVector UEnemyRushComponent::ResolveHomeLocation() const
 {
-	if (!IsValid(OwnerPawn) || !IsValid(TargetPawn) || !BurstProjectileClass || BurstProjectileCount <= 0)
+	if (IsValid(HomeAnchorActor))
+	{
+		return HomeAnchorActor->GetActorLocation() + HomeOffsetFromAnchor;
+	}
+
+	return InitialSpawnLocation;
+}
+
+void UEnemyRushComponent::UpdateReboundMovement(float DeltaTime)
+{
+	ReboundElapsedTime += DeltaTime;
+
+	const FVector SafeDirection = ReboundDirection.GetSafeNormal();
+	if (!SafeDirection.IsNearlyZero())
+	{
+		const FRotator TargetRotation = SafeDirection.Rotation();
+		const FRotator NewRotation = FMath::RInterpTo(OwnerPawn->GetActorRotation(), TargetRotation, DeltaTime, RotationInterpSpeed);
+		OwnerPawn->SetActorRotation(NewRotation);
+	}
+
+	const float ReboundSpeed = FMath::Max(CurrentMoveSpeed, MoveSpeed) * FMath::Max(1.0f, ReboundSpeedMultiplier);
+	const FVector MoveStep = OwnerPawn->GetActorForwardVector() * ReboundSpeed * DeltaTime;
+	OwnerPawn->AddActorWorldOffset(MoveStep, true);
+
+	if (ReboundElapsedTime >= ReboundDuration)
+	{
+		MoveState = EEnemyRushMoveState::Returning;
+	}
+}
+
+void UEnemyRushComponent::UpdateReturnMovement(float DeltaTime)
+{
+	const FVector HomeLocation = ResolveHomeLocation();
+	const FVector ToHome = HomeLocation - OwnerPawn->GetActorLocation();
+	const float DistanceToHome = ToHome.Size();
+
+	if (DistanceToHome <= ReturnAcceptanceRadius)
+	{
+		ResetChaseState();
+		return;
+	}
+
+	const FVector DesiredDirection = ToHome.GetSafeNormal();
+	if (!DesiredDirection.IsNearlyZero())
+	{
+		const FRotator TargetRotation = DesiredDirection.Rotation();
+		const FRotator NewRotation = FMath::RInterpTo(OwnerPawn->GetActorRotation(), TargetRotation, DeltaTime, RotationInterpSpeed);
+		OwnerPawn->SetActorRotation(NewRotation);
+	}
+
+	const float ReturnSpeed = FMath::Max(MoveSpeed, CurrentMoveSpeed) * FMath::Max(1.0f, ReturnSpeedMultiplier);
+	const FVector MoveStep = OwnerPawn->GetActorForwardVector() * ReturnSpeed * DeltaTime;
+	OwnerPawn->AddActorWorldOffset(MoveStep, true);
+}
+
+void UEnemyRushComponent::ResetChaseState()
+{
+	MoveState = EEnemyRushMoveState::Chasing;
+	CurrentMoveSpeed = FMath::Max(0.0f, MoveSpeed);
+	SpeedRampElapsedTime = 0.0f;
+	BehaviorElapsedTime = 0.0f;
+	ReboundElapsedTime = 0.0f;
+	CurrentTargetActor = nullptr;
+
+	if (AActor* TargetActor = AcquireTargetActor())
+	{
+		InitialMoveDirection = (TargetActor->GetActorLocation() - OwnerPawn->GetActorLocation()).GetSafeNormal();
+	}
+	else
+	{
+		InitialMoveDirection = OwnerPawn->GetActorForwardVector();
+	}
+}
+
+bool UEnemyRushComponent::TryFireBurst(AActor* TargetActor)
+{
+	if (!IsValid(OwnerPawn) || !IsValid(TargetActor) || !BurstProjectileClass || BurstProjectileCount <= 0)
 	{
 		return false;
 	}
 
-	const FVector ToTarget = (TargetPawn->GetActorLocation() - OwnerPawn->GetActorLocation()).GetSafeNormal();
+	const FVector ToTarget = (TargetActor->GetActorLocation() - OwnerPawn->GetActorLocation()).GetSafeNormal();
 	if (ToTarget.IsNearlyZero())
 	{
 		return false;
@@ -166,13 +329,13 @@ bool UEnemyRushComponent::TryFireBurst(APawn* TargetPawn)
 
 		FRotator SpawnRotation = BaseRotation;
 		SpawnRotation.Yaw += YawOffset;
-		SpawnBurstProjectile(SpawnLocation, SpawnRotation, TargetPawn);
+		SpawnBurstProjectile(SpawnLocation, SpawnRotation, TargetActor);
 	}
 
 	return true;
 }
 
-void UEnemyRushComponent::SpawnBurstProjectile(const FVector& SpawnLocation, const FRotator& SpawnRotation, APawn* TargetPawn)
+void UEnemyRushComponent::SpawnBurstProjectile(const FVector& SpawnLocation, const FRotator& SpawnRotation, AActor* TargetActor)
 {
 	if (!GetWorld())
 	{
@@ -195,7 +358,7 @@ void UEnemyRushComponent::SpawnBurstProjectile(const FVector& SpawnLocation, con
 		return;
 	}
 
-	SpawnedProjectile->SetTarget(TargetPawn);
+	SpawnedProjectile->SetTarget(TargetActor);
 	SpawnedProjectile->SetProjectileSpeed(BurstProjectileSpeed, BurstProjectileSpeed);
 	SpawnedProjectile->ConfigureAttackType(EBulletAttackType::NonPiercing, 0, 0.0f);
 }

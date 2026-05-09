@@ -7,6 +7,7 @@
 class UNiagaraComponent;
 class UNiagaraSystem;
 class USceneComponent;
+class UPrimitiveComponent;
 
 UCLASS(Blueprintable)
 class UNREALPROJECT_API ABeamEffectActor : public AActor
@@ -17,6 +18,7 @@ public:
 	ABeamEffectActor();
 
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Beam|Components")
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -53,6 +55,21 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Beam|Assets")
 	TObjectPtr<UNiagaraSystem> DefaultHitSystem;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Beam|Damage")
+	bool bBeamDamageEnabled = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Beam|Damage", meta = (ClampMin = "0.0"))
+	float BeamDamage = 10.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Beam|Damage", meta = (ClampMin = "0.0"))
+	float BeamDamageTickInterval = 0.1f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Beam|Damage", meta = (ClampMin = "0.0"))
+	float BeamTraceRadius = 40.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Beam|Damage")
+	bool bAllowRepeatedDamageToSameTarget = true;
 
 	UFUNCTION(BlueprintCallable, Category = "Beam")
 	void ApplyBeamParameters();
@@ -93,9 +110,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Beam")
 	void DeactivateHitEffect();
 
+	UFUNCTION(BlueprintCallable, Category = "Beam|Damage")
+	void SetBeamDamageEnabled(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, Category = "Beam|Damage")
+	void ConfigureBeamDamage(float InDamage, float InTickInterval, float InTraceRadius, bool bInAllowRepeatedDamageToSameTarget);
+
 	UFUNCTION(BlueprintPure, Category = "Beam")
 	UNiagaraComponent* GetBeamComponent() const { return BeamComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Beam")
 	UNiagaraComponent* GetHitComponent() const { return HitComponent; }
+
+protected:
+	float BeamDamageTickAccumulator = 0.0f;
+	TSet<TWeakObjectPtr<AActor>> DamagedActorsThisActivation;
+
+	void ApplyBeamDamage();
+	bool TryApplyDamageToActor(AActor* TargetActor);
+	bool CanDamageActor(AActor* OtherActor) const;
 };

@@ -17,6 +17,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnDissolveInFinished() override;
+	virtual void OnDissolveOutFinished() override;
 
 	UFUNCTION()
 	void HandleHpChanged(float CurrentHp);
@@ -48,4 +50,5 @@ public:
 
 private:
 	bool bBossDefeatHandled = false;
+	void SpawnSnakeActor();
 };

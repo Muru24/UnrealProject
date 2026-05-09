@@ -21,11 +21,14 @@ public:
 	FMovePawn Stats;
 
 	void ApplyDamage(float DamageAmount);
+	void Heal(float HealAmount);
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnHpChangedDelegate OnHpChanged;
 
 	float GetHpPercentage() const { return Stats.unit.HP / Stats.unit.MaxHP; }
+	float GetCurrentHp() const { return Stats.unit.HP; }
+	float GetMaxHp() const { return Stats.unit.MaxHP; }
 
 	float GetMoveSpeed() const { return Stats.move.MoveSpeed; }
 	float GetAcceleration() const { return Stats.move.Acceleration; }

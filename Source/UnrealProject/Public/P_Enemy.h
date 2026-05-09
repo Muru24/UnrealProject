@@ -19,7 +19,21 @@ public:
 	virtual void BeginPlay() override;
 
 protected:
+	virtual void OnDissolveOutFinished() override;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UEnemyRushComponent* EnemyRushComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Death", meta = (ClampMin = "0.0"))
+	float DestroyDelay = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|Death")
+	bool bEnemyDefeated = false;
+
+private:
+	UFUNCTION()
+	void HandleHpChanged(float CurrentHp);
+
+	void HandleEnemyDefeated();
 
 };

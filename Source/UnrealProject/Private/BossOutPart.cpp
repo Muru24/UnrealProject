@@ -118,14 +118,7 @@ void ABossOutPart::HandlePartDestroyed()
 		OwningCompositeMaster->RequestCombatRestartSequence();
 	}
 
-	if (bHasDissolveParameter && DynamicMaterial)
-	{
-		bIsDissolvingOut = true;
-	}
-	else
-	{
-		RequestPartDestroyedSequence();
-	}
+	StartDissolveOut();
 }
 
 void ABossOutPart::OnDissolveOutFinished()

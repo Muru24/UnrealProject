@@ -1,6 +1,7 @@
 #include "PlayerAimFireComponent.h"
 
 #include "Engine/World.h"
+#include "EnemyManager.h"
 #include "LockOnComponent.h"
 #include "SquadCraftActor.h"
 
@@ -18,7 +19,7 @@ bool UPlayerAimFireComponent::FireActiveCraft(APlayerController* PlayerControlle
 
 	FVector TargetPoint = FVector::ZeroVector;
 	AActor* TargetActor = nullptr;
-	if (!ResolveAimTarget(PlayerController, LockOnComponent, TargetPoint, TargetActor))
+	if (!ResolveAimTarget(PlayerController, LockOnComponent, ActiveCraft, TargetPoint, TargetActor))
 	{
 		return false;
 	}
@@ -26,7 +27,24 @@ bool UPlayerAimFireComponent::FireActiveCraft(APlayerController* PlayerControlle
 	return ActiveCraft->FireAt(TargetPoint, TargetActor, InstigatorPawn);
 }
 
-bool UPlayerAimFireComponent::ResolveAimTarget(APlayerController* PlayerController, ULockOnComponent* LockOnComponent, FVector& OutTargetPoint, AActor*& OutTargetActor) const
+bool UPlayerAimFireComponent::TryAutoFireActiveCraft(APlayerController* PlayerController, ULockOnComponent* LockOnComponent, ASquadCraftActor* ActiveCraft, APawn* InstigatorPawn) const
+{
+	if (!PlayerController || !ActiveCraft || !InstigatorPawn)
+	{
+		return false;
+	}
+
+	FVector TargetPoint = FVector::ZeroVector;
+	AActor* TargetActor = nullptr;
+	if (!ResolveAimTarget(PlayerController, LockOnComponent, ActiveCraft, TargetPoint, TargetActor))
+	{
+		return false;
+	}
+
+	return ActiveCraft->TryAutoFireAt(TargetPoint, TargetActor, InstigatorPawn);
+}
+
+bool UPlayerAimFireComponent::ResolveAimTarget(APlayerController* PlayerController, ULockOnComponent* LockOnComponent, ASquadCraftActor* ActiveCraft, FVector& OutTargetPoint, AActor*& OutTargetActor) const
 {
 	OutTargetPoint = FVector::ZeroVector;
 	OutTargetActor = nullptr;
@@ -38,28 +56,102 @@ bool UPlayerAimFireComponent::ResolveAimTarget(APlayerController* PlayerControll
 		return true;
 	}
 
-	FVector MouseLocation = FVector::ZeroVector;
-	FVector MouseDirection = FVector::ZeroVector;
-	if (!PlayerController->DeprojectMousePositionToWorld(MouseLocation, MouseDirection))
+	FVector MouseWorldOrigin = FVector::ZeroVector;
+	FVector MouseWorldDirection = FVector::ForwardVector;
+	if (PlayerController->DeprojectMousePositionToWorld(MouseWorldOrigin, MouseWorldDirection))
 	{
-		return false;
+		OutTargetPoint = MouseWorldOrigin + (MouseWorldDirection * MouseAimDistance);
+		OutTargetActor = nullptr;
+		return true;
 	}
 
-	const FVector TraceStart = MouseLocation;
-	const FVector TraceEnd = TraceStart + (MouseDirection * 10000.0f);
-
-	FHitResult HitResult;
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(GetOwner());
-
-	if (GetWorld() && GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, QueryParams))
+	const FVector SearchOrigin = ActiveCraft ? ActiveCraft->GetActorLocation() : (GetOwner() ? GetOwner()->GetActorLocation() : FVector::ZeroVector);
+	if (AActor* PriorityEnemy = GetPriorityEnemyInRange(SearchOrigin))
 	{
-		OutTargetPoint = HitResult.Location;
-	}
-	else
-	{
-		OutTargetPoint = TraceEnd;
+		OutTargetPoint = PriorityEnemy->GetActorLocation();
+		OutTargetActor = PriorityEnemy;
+		return true;
 	}
 
-	return true;
+	if (AActor* RandomEnemy = GetRandomEnemy())
+	{
+		OutTargetPoint = RandomEnemy->GetActorLocation();
+		OutTargetActor = RandomEnemy;
+		return true;
+	}
+
+	return false;
+}
+
+AActor* UPlayerAimFireComponent::GetPriorityEnemyInRange(const FVector& Origin) const
+{
+	AActor* NearestEnemy = GetNearestEnemy(Origin);
+	if (!NearestEnemy)
+	{
+		return nullptr;
+	}
+
+	return FVector::DistSquared(Origin, NearestEnemy->GetActorLocation()) <= FMath::Square(PriorityTargetRange)
+		? NearestEnemy
+		: nullptr;
+}
+
+AActor* UPlayerAimFireComponent::GetNearestEnemy(const FVector& Origin) const
+{
+	if (!GetWorld())
+	{
+		return nullptr;
+	}
+
+	if (UEnemyManager* EnemySubsystem = GetWorld()->GetSubsystem<UEnemyManager>())
+	{
+		AActor* BestTarget = nullptr;
+		float BestDistanceSq = TNumericLimits<float>::Max();
+
+		for (APawn* Enemy : EnemySubsystem->GetEnemys())
+		{
+			if (IsValid(Enemy) && Enemy != GetOwner())
+			{
+				const float DistanceSq = FVector::DistSquared(Origin, Enemy->GetActorLocation());
+				if (DistanceSq < BestDistanceSq)
+				{
+					BestDistanceSq = DistanceSq;
+					BestTarget = Enemy;
+				}
+			}
+		}
+
+		return BestTarget;
+	}
+
+	return nullptr;
+}
+
+AActor* UPlayerAimFireComponent::GetRandomEnemy() const
+{
+	if (!GetWorld())
+	{
+		return nullptr;
+	}
+
+	if (UEnemyManager* EnemySubsystem = GetWorld()->GetSubsystem<UEnemyManager>())
+	{
+		TArray<APawn*> ValidEnemies;
+		for (APawn* Enemy : EnemySubsystem->GetEnemys())
+		{
+			if (IsValid(Enemy) && Enemy != GetOwner())
+			{
+				ValidEnemies.Add(Enemy);
+			}
+		}
+
+		if (ValidEnemies.IsEmpty())
+		{
+			return nullptr;
+		}
+
+		return ValidEnemies[FMath::RandRange(0, ValidEnemies.Num() - 1)];
+	}
+
+	return nullptr;
 }

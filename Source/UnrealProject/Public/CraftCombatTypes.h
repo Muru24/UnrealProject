@@ -47,5 +47,5 @@ struct FCraftAttackConfig
 	float MultiShotSpacing = 18.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack|Auto Fire", meta = (ClampMin = "0.05"))
-	float AutoFireInterval = 0.35f;
+	float AutoFireInterval = 0.2f;
 };

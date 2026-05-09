@@ -57,7 +57,7 @@ void UBossSupportPartOrbitComponent::RefreshOrbitParts()
 	}
 
 	ABossCore* BossCore = OwnerCompositeMaster->GetBossCore();
-	if (!IsValid(BossCore))
+	if (!IsValid(BossCore) || !BossCore->IsDissolveInComplete())
 	{
 		return;
 	}

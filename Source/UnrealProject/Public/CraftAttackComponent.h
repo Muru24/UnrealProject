@@ -22,14 +22,23 @@ public:
 	void ApplyAttackConfig(const FCraftAttackConfig& InAttackConfig);
 	bool FireFromOrigin(USceneComponent* FireOriginComponent, const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn);
 	bool TryAutoFireFromOrigin(USceneComponent* FireOriginComponent, const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn);
+	void ApplyTemporaryFireRateMultiplier(float InMultiplier, float InDuration);
+	float GetCurrentFireRateMultiplier() const { return CurrentFireRateMultiplier; }
 
 protected:
 	FCraftAttackConfig AttackConfig;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	float AutoFireCooldownRemaining = 0.0f;
+	float FireCooldownRemaining = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	float CurrentFireRateMultiplier = 1.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	float FireRateBuffRemaining = 0.0f;
 
 	FRotator BuildAimRotation(USceneComponent* FireOriginComponent, const FVector& TargetPoint) const;
+	float GetCurrentFireInterval() const;
 	bool SpawnProjectile(USceneComponent* FireOriginComponent, const FRotator& SpawnRotation, APawn* InstigatorPawn, float LateralOffset = 0.0f);
 	bool FireSingle(USceneComponent* FireOriginComponent, const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn);
 	bool FireBurst(USceneComponent* FireOriginComponent, const FVector& TargetPoint, AActor* TargetActor, APawn* InstigatorPawn);

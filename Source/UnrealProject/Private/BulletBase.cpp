@@ -18,6 +18,7 @@ ABulletBase::ABulletBase()
     CollisionComp->InitBoxExtent(FVector(10.0f, 5.0f, 5.0f));
 
     CollisionComp->SetCollisionProfileName(TEXT("Projectile"));
+    CollisionComp->SetGenerateOverlapEvents(true);
 
     CollisionComp->OnComponentHit.AddDynamic(this, &ABulletBase::OnHit);
     CollisionComp->OnComponentBeginOverlap.AddDynamic(this, &ABulletBase::OnOverlap);

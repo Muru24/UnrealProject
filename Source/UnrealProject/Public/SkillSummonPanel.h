@@ -32,5 +32,5 @@ protected:
 private:
 	AActor* ResolveTargetActor(AActor* SourceActor, AActor* RequestedTarget) const;
 	AActor* ResolveLockOnTarget(AActor* SourceActor) const;
-	AActor* ResolveNearestEnemy(AActor* SourceActor) const;
+	AActor* ResolveRandomEnemy(AActor* SourceActor) const;
 };

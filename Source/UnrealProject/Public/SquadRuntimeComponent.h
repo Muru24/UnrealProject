@@ -53,4 +53,5 @@ protected:
 private:
 	void InitializeCraftVisual(ASquadCraftActor* Craft, UStaticMeshComponent* FallbackMesh) const;
 	bool IsCraftOperational(const ASquadCraftActor* Craft) const;
+	ESquadSlot ResolveDisplaySlotForCraft(ESquadSlot CraftSlot, const USquadComponent* SquadLogic) const;
 };

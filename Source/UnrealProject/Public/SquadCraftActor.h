@@ -42,6 +42,7 @@ public:
 	ECraftCombatRole GetCombatRole() const;
 	bool IsActiveCraft() const { return bIsActiveCraft; }
 	class USkillComponent* GetSkillComponent() const { return SkillComponent; }
+	class UCraftAttackComponent* GetAttackComponent() const { return AttackComponent; }
 	UStatComponent* GetStatComponent() const { return StatComponent; }
 
 	FOnSquadCraftDefeated OnCraftDefeated;

@@ -18,7 +18,17 @@ public:
 	UPlayerAimFireComponent();
 
 	bool FireActiveCraft(APlayerController* PlayerController, ULockOnComponent* LockOnComponent, ASquadCraftActor* ActiveCraft, APawn* InstigatorPawn) const;
+	bool TryAutoFireActiveCraft(APlayerController* PlayerController, ULockOnComponent* LockOnComponent, ASquadCraftActor* ActiveCraft, APawn* InstigatorPawn) const;
 
 private:
-	bool ResolveAimTarget(APlayerController* PlayerController, ULockOnComponent* LockOnComponent, FVector& OutTargetPoint, AActor*& OutTargetActor) const;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float PriorityTargetRange = 1200.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float MouseAimDistance = 10000.0f;
+
+	bool ResolveAimTarget(APlayerController* PlayerController, ULockOnComponent* LockOnComponent, ASquadCraftActor* ActiveCraft, FVector& OutTargetPoint, AActor*& OutTargetActor) const;
+	AActor* GetPriorityEnemyInRange(const FVector& Origin) const;
+	AActor* GetNearestEnemy(const FVector& Origin) const;
+	AActor* GetRandomEnemy() const;
 };

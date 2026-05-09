@@ -168,11 +168,14 @@ void ULaserAttackComponent::FireBeam()
 	{
 		ActiveBeamActor->SetMainColor(WarningBeamColor, false);
 		ActiveBeamActor->SetBeamSize(WarningBeamSize, false);
+		ActiveBeamActor->SetBeamDamageEnabled(false);
 	}
 	else
 	{
 		ActiveBeamActor->SetMainColor(AttackBeamColor, false);
 		ActiveBeamActor->SetBeamSize(InitialBeamSize, false);
+		ActiveBeamActor->ConfigureBeamDamage(AttackDamage, AttackDamageTickInterval, AttackTraceRadius, true);
+		ActiveBeamActor->SetBeamDamageEnabled(true);
 	}
 
 	ActiveBeamActor->ApplyBeamParameters();
@@ -222,6 +225,7 @@ void ULaserAttackComponent::BeginLaserFiring()
 	bWarningActive = false;
 	bAttackActive = true;
 	AttackTimeTracker = 0.0f;
+	CurrentBeamAimLocation = ResolveCurrentAimLocation();
 	FireBeam();
 
 	if (UWorld* World = GetWorld())

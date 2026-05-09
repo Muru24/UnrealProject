@@ -21,7 +21,12 @@ public:
 	void HandleSupportAutoFire(const TArray<ASquadCraftActor*>& SquadCrafts, ULockOnComponent* LockOnComponent, APawn* InstigatorPawn) const;
 
 private:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float PriorityTargetRange = 1200.0f;
+
 	AActor* GetSupportAutoFireTargetForCraft(const ASquadCraftActor* Craft, ULockOnComponent* LockOnComponent) const;
+	AActor* GetPriorityEnemyInRange(const FVector& Origin) const;
 	AActor* GetNearestEnemy(const FVector& Origin) const;
+	AActor* GetRandomEnemy() const;
 	bool ShouldSupportCraftAutoFire(const ASquadCraftActor* Craft) const;
 };

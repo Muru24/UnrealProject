@@ -20,24 +20,20 @@ void URailOffsetComponent::UpdateOffset(float DeltaTime)
 	const FVector2D PreviousOffset = CurrentOffset;
 	const bool bHasHorizontalInput = !FMath::IsNearlyZero(CurrentInput.X);
 	const bool bHasVerticalInput = !FMath::IsNearlyZero(CurrentInput.Y);
+	const float TargetHorizontalOffset = CurrentInput.X * MaxHorizontalOffset;
+	const float TargetVerticalOffset = CurrentInput.Y * MaxVerticalOffset;
 
-	if (bHasHorizontalInput)
-	{
-		CurrentOffset.X += CurrentInput.X * HorizontalMoveSpeed * DeltaTime;
-	}
-	else
-	{
-		CurrentOffset.X = FMath::FInterpTo(CurrentOffset.X, 0.0f, DeltaTime, ReturnInterpSpeed);
-	}
+	CurrentOffset.X = FMath::FInterpTo(
+		CurrentOffset.X,
+		TargetHorizontalOffset,
+		DeltaTime,
+		bHasHorizontalInput ? HorizontalInputInterpSpeed : HorizontalReturnInterpSpeed);
 
-	if (bHasVerticalInput)
-	{
-		CurrentOffset.Y += CurrentInput.Y * VerticalMoveSpeed * DeltaTime;
-	}
-	else
-	{
-		CurrentOffset.Y = FMath::FInterpTo(CurrentOffset.Y, 0.0f, DeltaTime, ReturnInterpSpeed);
-	}
+	CurrentOffset.Y = FMath::FInterpTo(
+		CurrentOffset.Y,
+		TargetVerticalOffset,
+		DeltaTime,
+		bHasVerticalInput ? VerticalInputInterpSpeed : VerticalReturnInterpSpeed);
 
 	CurrentOffset.X = FMath::Clamp(CurrentOffset.X, -MaxHorizontalOffset, MaxHorizontalOffset);
 	CurrentOffset.Y = FMath::Clamp(CurrentOffset.Y, -MaxVerticalOffset, MaxVerticalOffset);
