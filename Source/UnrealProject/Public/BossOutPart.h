@@ -46,6 +46,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Boss|OutPart")
 	UBossOutPartPatternComponent* GetPatternComponent() const { return PatternComponent; }
 
+	UFUNCTION(BlueprintPure, Category = "Boss|OutPart|Death")
+	bool IsPartDefeated() const { return bPartDestroyedHandled; }
+
 	UFUNCTION(BlueprintCallable, Category = "Boss|OutPart|Death")
 	void RequestPartDestroyedSequence();
 

@@ -84,6 +84,7 @@ protected:
 	void MoveVertical(float Value);
 	void SwapSquadLeft();
 	void SwapSquadRight();
+	void ToggleSquadAutoAttack();
 	void TriggerOffensiveSkill();
 	void TriggerBuffSkill();
 	void UpdateAutoBuffSkill(float DeltaTime);
@@ -94,6 +95,7 @@ protected:
 
 public:
 	UPlayerCameraFeedbackComponent* GetPlayerCameraFeedbackComponent() const { return PlayerCameraFeedbackComponent; }
+	ASquadCraftActor* GetCurrentActiveCraft() const { return GetActiveCraft(); }
 
     UFUNCTION(BlueprintCallable, Category = "Skill")
     const TArray<AActor*>& GetSkillTargetEnemies() const { return SkillTargetEnemies; }
@@ -109,5 +111,8 @@ protected:
 	float BuffAutoActivateInterval = 0.25f;
 
 	float BuffAutoActivateTimer = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	bool bSquadAutoAttackEnabled = true;
 
 };

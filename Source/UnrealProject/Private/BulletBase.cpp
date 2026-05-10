@@ -2,6 +2,7 @@
 
 
 #include "BulletBase.h"
+#include "BossCore.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "NiagaraComponent.h"
@@ -168,6 +169,14 @@ bool ABulletBase::ApplyDamageToActor(AActor* TargetActorToDamage)
     if (!TargetActorToDamage || DamagedActors.Contains(TargetActorToDamage))
     {
         return false;
+    }
+
+    if (const ABossCore* BossCore = Cast<ABossCore>(TargetActorToDamage))
+    {
+        if (!BossCore->CanReceiveCoreDamage())
+        {
+            return false;
+        }
     }
 
     if (ABulletBase* TargetBullet = Cast<ABulletBase>(TargetActorToDamage))

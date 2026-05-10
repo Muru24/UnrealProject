@@ -49,6 +49,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Boss|Combat")
 	void ReceiveCombatRestartSequenceRequested();
 
+	UFUNCTION(BlueprintCallable, Category = "Boss|Combat")
+	void RestartBossCombat();
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -67,4 +70,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TArray<UChildActorComponent*> ChildParts;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat", meta = (ClampMin = "0.0"))
+	float CombatRestartDelay = 1.25f;
+
+	FTimerHandle CombatRestartTimerHandle;
 };

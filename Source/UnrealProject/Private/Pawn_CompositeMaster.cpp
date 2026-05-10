@@ -10,6 +10,7 @@
 #include "ChildActorPartsComponent.h"
 #include "Components/ChildActorComponent.h"
 #include "EngineUtils.h"
+#include "UnrealProject/Pawn_Template.h"
 #include "SnakeBodyChargeComponent.h"
 
 APawn_CompositeMaster::APawn_CompositeMaster()
@@ -146,7 +147,6 @@ void APawn_CompositeMaster::StopAllBossCombat()
 			SnakeBodyChargeComponent->SetComponentTickEnabled(false);
 		}
 
-		ChildPartActor->SetActorTickEnabled(false);
 	}
 
 	if (!GetWorld())
@@ -175,4 +175,70 @@ void APawn_CompositeMaster::StopAllBossCombat()
 void APawn_CompositeMaster::RequestCombatRestartSequence()
 {
 	ReceiveCombatRestartSequenceRequested();
+
+	if (!GetWorld())
+	{
+		return;
+	}
+
+	GetWorld()->GetTimerManager().ClearTimer(CombatRestartTimerHandle);
+	if (CombatRestartDelay <= 0.0f)
+	{
+		RestartBossCombat();
+	}
+	else
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			CombatRestartTimerHandle,
+			this,
+			&APawn_CompositeMaster::RestartBossCombat,
+			CombatRestartDelay,
+			false);
+	}
+}
+
+void APawn_CompositeMaster::RestartBossCombat()
+{
+	if (BossPatternSchedulerComponent)
+	{
+		BossPatternSchedulerComponent->SetAutoPatternEnabled(true);
+		BossPatternSchedulerComponent->SetComponentTickEnabled(true);
+	}
+
+	if (BossSupportPartOrbitComponent)
+	{
+		BossSupportPartOrbitComponent->SetOrbitEnabled(true);
+		BossSupportPartOrbitComponent->RefreshOrbitParts();
+		BossSupportPartOrbitComponent->SetComponentTickEnabled(true);
+	}
+
+	TArray<AActor*> ChildPartActors;
+	GetChildPartActors(ChildPartActors);
+	for (AActor* ChildPartActor : ChildPartActors)
+	{
+		if (!IsValid(ChildPartActor))
+		{
+			continue;
+		}
+
+		if (const APawn_Template* PawnTemplate = Cast<APawn_Template>(ChildPartActor))
+		{
+			if (!PawnTemplate->IsDissolveInComplete())
+			{
+				continue;
+			}
+		}
+
+		ChildPartActor->SetActorTickEnabled(true);
+
+		if (UBossOutPartPatternComponent* BossOutPartPatternComponent = ChildPartActor->FindComponentByClass<UBossOutPartPatternComponent>())
+		{
+			BossOutPartPatternComponent->SetComponentTickEnabled(true);
+		}
+
+		if (USnakeBodyChargeComponent* SnakeBodyChargeComponent = ChildPartActor->FindComponentByClass<USnakeBodyChargeComponent>())
+		{
+			SnakeBodyChargeComponent->SetComponentTickEnabled(true);
+		}
+	}
 }

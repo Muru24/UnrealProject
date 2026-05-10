@@ -1,4 +1,4 @@
-﻿#include "StatComponent.h"
+#include "StatComponent.h"
 
 UStatComponent::UStatComponent()
 {

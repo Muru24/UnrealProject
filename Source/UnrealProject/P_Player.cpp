@@ -119,6 +119,7 @@ void AP_Player::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction(TEXT("Acceleration"), IE_Pressed, this, &AP_Player::Accelerator);
 	PlayerInputComponent->BindAxis(TEXT("MoveHorizontal"), this, &AP_Player::MoveHorizontal);
 	PlayerInputComponent->BindAxis(TEXT("MoveVertical"), this, &AP_Player::MoveVertical);
+	PlayerInputComponent->BindKey(EKeys::Tab, IE_Pressed, this, &AP_Player::ToggleSquadAutoAttack);
 	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &AP_Player::TriggerOffensiveSkill);
 }
 
@@ -252,6 +253,11 @@ void AP_Player::SwapSquadRight()
 	}
 }
 
+void AP_Player::ToggleSquadAutoAttack()
+{
+	bSquadAutoAttackEnabled = !bSquadAutoAttackEnabled;
+}
+
 void AP_Player::TriggerOffensiveSkill()
 {
 	ASquadCraftActor* ActiveCraft = GetActiveCraft();
@@ -303,7 +309,7 @@ void AP_Player::UpdateAutoBuffSkill(float DeltaTime)
 
 void AP_Player::HandleSupportAutoFire()
 {
-	if (!SupportFireComponent || !SquadRuntimeComponent)
+	if (!bSquadAutoAttackEnabled || !SupportFireComponent || !SquadRuntimeComponent)
 	{
 		return;
 	}
@@ -316,7 +322,7 @@ void AP_Player::HandleSupportAutoFire()
 void AP_Player::HandleActiveAutoFire()
 {
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
-	if (!PlayerAimFireComponent || !PlayerController)
+	if (!bSquadAutoAttackEnabled || !PlayerAimFireComponent || !PlayerController)
 	{
 		return;
 	}

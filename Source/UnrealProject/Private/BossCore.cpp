@@ -1,15 +1,19 @@
 #include "BossCore.h"
 
 #include "BossPartPatternCoordinatorComponent.h"
+#include "../P_Player.h"
+#include "Components/SphereComponent.h"
 #include "HUDManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Pawn_CompositeMaster.h"
+#include "BossOutPart.h"
+#include "PlayerCameraFeedbackComponent.h"
 #include "Snake_CompositeMaster.h"
 #include "StatComponent.h"
 
 ABossCore::ABossCore()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 }
 
 void ABossCore::BeginPlay()
@@ -85,6 +89,14 @@ void ABossCore::HandleBossDefeated()
 		}
 	}
 
+	if (AP_Player* PlayerPawn = Cast<AP_Player>(UGameplayStatics::GetPlayerPawn(this, 0)))
+	{
+		if (UPlayerCameraFeedbackComponent* CameraFeedback = PlayerPawn->GetPlayerCameraFeedbackComponent())
+		{
+			CameraFeedback->PlayCraftDestroyedShake(PlayerPawn);
+		}
+	}
+
 	if (APawn_CompositeMaster* OwningCompositeMaster = GetOwningCompositeMaster())
 	{
 		OwningCompositeMaster->StopAllBossCombat();
@@ -96,14 +108,39 @@ void ABossCore::HandleBossDefeated()
 		SpawnedSnake->SetActorTickEnabled(false);
 	}
 
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(true);
+
+	if (CollisionComponent)
+	{
+		CollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		CollisionComponent->SetGenerateOverlapEvents(false);
+	}
+
 	if (bHasDissolveParameter && DynamicMaterial)
 	{
+		bPendingDestroyAfterDeathSequence = true;
 		StartDissolveOut();
 	}
 	else
 	{
 		RequestBossDeathSequence();
 		RequestGameClear();
+
+		if (IsValid(SpawnedSnake))
+		{
+			SpawnedSnake->Destroy();
+			SpawnedSnake = nullptr;
+		}
+
+		if (APawn_CompositeMaster* OwningCompositeMaster = GetOwningCompositeMaster())
+		{
+			OwningCompositeMaster->Destroy();
+		}
+		else
+		{
+			Destroy();
+		}
 	}
 }
 
@@ -112,6 +149,24 @@ void ABossCore::OnDissolveOutFinished()
 	Super::OnDissolveOutFinished();
 	RequestBossDeathSequence();
 	RequestGameClear();
+
+	if (IsValid(SpawnedSnake))
+	{
+		SpawnedSnake->Destroy();
+		SpawnedSnake = nullptr;
+	}
+
+	if (bPendingDestroyAfterDeathSequence)
+	{
+		if (APawn_CompositeMaster* OwningCompositeMaster = GetOwningCompositeMaster())
+		{
+			OwningCompositeMaster->Destroy();
+		}
+		else
+		{
+			Destroy();
+		}
+	}
 }
 
 void ABossCore::RequestBossDeathSequence()
@@ -132,4 +187,27 @@ APawn_CompositeMaster* ABossCore::GetOwningCompositeMaster() const
 	}
 
 	return nullptr;
+}
+
+bool ABossCore::CanReceiveCoreDamage() const
+{
+	const APawn_CompositeMaster* OwningCompositeMaster = GetOwningCompositeMaster();
+	if (!IsValid(OwningCompositeMaster))
+	{
+		return true;
+	}
+
+	TArray<AActor*> SupportPartActors;
+	OwningCompositeMaster->GetSupportPartActors(SupportPartActors);
+
+	for (AActor* SupportPartActor : SupportPartActors)
+	{
+		const ABossOutPart* SupportPart = Cast<ABossOutPart>(SupportPartActor);
+		if (IsValid(SupportPart) && !SupportPart->IsPartDefeated())
+		{
+			return false;
+		}
+	}
+
+	return true;
 }

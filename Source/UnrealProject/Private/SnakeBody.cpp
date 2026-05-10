@@ -3,8 +3,10 @@
 
 #include "SnakeBody.h"
 #include "SnakeBodyChargeComponent.h"
+#include "Components/ChildActorComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Snake_CompositeMaster.h"
 #include "StatComponent.h"
 
 ASnakeBody::ASnakeBody()
@@ -58,7 +60,15 @@ void ASnakeBody::HandleSegmentDefeated()
 	}
 
 	SetActorEnableCollision(false);
-	SetActorTickEnabled(false);
+	SetActorTickEnabled(true);
+
+	if (UChildActorComponent* ParentChildActorComponent = GetParentComponent())
+	{
+		if (ASnake_CompositeMaster* OwningSnakeMaster = Cast<ASnake_CompositeMaster>(ParentChildActorComponent->GetOwner()))
+		{
+			OwningSnakeMaster->UnregisterSegment(ParentChildActorComponent);
+		}
+	}
 
 	if (bHasDissolveParameter && DynamicMaterial)
 	{
@@ -77,6 +87,11 @@ void ASnakeBody::HandleSegmentDefeated()
 void ASnakeBody::OnDissolveOutFinished()
 {
 	Super::OnDissolveOutFinished();
+
+	if (UChildActorComponent* ParentChildActorComponent = GetParentComponent())
+	{
+		ParentChildActorComponent->SetChildActorClass(nullptr);
+	}
 
 	if (DestroyDelay > 0.0f)
 	{

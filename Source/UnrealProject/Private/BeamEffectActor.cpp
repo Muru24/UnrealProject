@@ -254,7 +254,9 @@ void ABeamEffectActor::ApplyBeamDamage()
 		QueryParams.AddIgnoredActor(OwnerActor->GetOwner());
 	}
 
-	const FCollisionObjectQueryParams ObjectQueryParams = FCollisionObjectQueryParams::AllDynamicObjects;
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 	const bool bHitSomething = GetWorld()->SweepMultiByObjectType(
 		HitResults,
 		StartLocation,

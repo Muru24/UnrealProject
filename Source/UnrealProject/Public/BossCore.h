@@ -48,7 +48,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Boss|Runtime")
 	APawn_CompositeMaster* GetOwningCompositeMaster() const;
 
+	UFUNCTION(BlueprintPure, Category = "Boss|Runtime")
+	bool CanReceiveCoreDamage() const;
+
 private:
 	bool bBossDefeatHandled = false;
+	bool bPendingDestroyAfterDeathSequence = false;
 	void SpawnSnakeActor();
 };

@@ -1,6 +1,7 @@
 #include "BossOutPart.h"
 
 #include "BossOutPartPatternComponent.h"
+#include "Components/ChildActorComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "CraftAttackComponent.h"
@@ -125,6 +126,15 @@ void ABossOutPart::OnDissolveOutFinished()
 {
 	Super::OnDissolveOutFinished();
 	RequestPartDestroyedSequence();
+
+	if (UChildActorComponent* ParentChildActorComponent = GetParentComponent())
+	{
+		ParentChildActorComponent->SetChildActorClass(nullptr);
+	}
+	else
+	{
+		Destroy();
+	}
 }
 
 void ABossOutPart::RequestPartDestroyedSequence()

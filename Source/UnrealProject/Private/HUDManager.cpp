@@ -11,7 +11,9 @@
 #include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
 #include "Pawn_CompositeMaster.h"
+#include "../P_Player.h"
 #include "PlayerRailMovementComponent.h"
+#include "SquadCraftActor.h"
 #include "Snake_CompositeMaster.h"
 #include "SnakeBodyChargeComponent.h"
 #include "SnakeSkillManager.h"
@@ -220,10 +222,22 @@ void AHUDManager::ApplyMiniGameFailureDamage()
         return;
     }
 
-    if (UStatComponent* TargetStatComponent = OwningPawn->FindComponentByClass<UStatComponent>())
-    {
-        TargetStatComponent->ApplyDamage(MiniGameFailureDamage);
-    }
+	if (AP_Player* PlayerPawn = Cast<AP_Player>(OwningPawn))
+	{
+		if (ASquadCraftActor* ActiveCraft = PlayerPawn->GetCurrentActiveCraft())
+		{
+			if (UStatComponent* TargetStatComponent = ActiveCraft->GetStatComponent())
+			{
+				TargetStatComponent->ApplyDamage(MiniGameFailureDamage);
+				return;
+			}
+		}
+	}
+
+	if (UStatComponent* TargetStatComponent = OwningPawn->FindComponentByClass<UStatComponent>())
+	{
+		TargetStatComponent->ApplyDamage(MiniGameFailureDamage);
+	}
 }
 
 void AHUDManager::SetMiniGameBattlePaused(bool bPaused)
