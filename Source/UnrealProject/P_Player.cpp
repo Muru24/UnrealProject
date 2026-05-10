@@ -8,6 +8,7 @@
 #include "Path.h"
 #include "PathFollowerComponent.h"
 #include "PlayerAimFireComponent.h"
+#include "PlayerCameraFeedbackComponent.h"
 #include "PlayerCameraRigComponent.h"
 #include "PlayerRailMovementComponent.h"
 #include "RailOffsetComponent.h"
@@ -44,6 +45,7 @@ AP_Player::AP_Player()
 	SquadComponent = CreateDefaultSubobject<USquadComponent>(TEXT("SquadComp"));
 	SquadRuntimeComponent = CreateDefaultSubobject<USquadRuntimeComponent>(TEXT("SquadRuntimeComp"));
 	PlayerAimFireComponent = CreateDefaultSubobject<UPlayerAimFireComponent>(TEXT("PlayerAimFireComp"));
+	PlayerCameraFeedbackComponent = CreateDefaultSubobject<UPlayerCameraFeedbackComponent>(TEXT("PlayerCameraFeedbackComp"));
 	PlayerCameraRigComponent = CreateDefaultSubobject<UPlayerCameraRigComponent>(TEXT("PlayerCameraRigComp"));
 	PlayerRailMovementComponent = CreateDefaultSubobject<UPlayerRailMovementComponent>(TEXT("PlayerRailMovementComp"));
 	SupportFireComponent = CreateDefaultSubobject<USupportFireComponent>(TEXT("SupportFireComp"));
@@ -151,6 +153,7 @@ void AP_Player::Tick(float DeltaTime)
 	{
 		PlayerCameraRigComponent->UpdateCameraAnchor(SpringArm, GetActiveCraft(), false);
 		PlayerCameraRigComponent->UpdateCameraZoom(SpringArm, PathFollower && PathFollower->IsAccelerationActive(), DeltaTime);
+		PlayerCameraRigComponent->UpdateCameraShake(SpringArm, DeltaTime);
 	}
 	HandleActiveAutoFire();
 	HandleSupportAutoFire();
@@ -158,7 +161,8 @@ void AP_Player::Tick(float DeltaTime)
 	{
 		if (PlayerCameraRigComponent)
 		{
-			PlayerCameraRigComponent->UpdateCameraPan(PlayerController, SpringArm, DeltaTime);
+			const bool bSuppressCameraPan = RailOffset && !RailOffset->GetCurrentInput().IsNearlyZero();
+			PlayerCameraRigComponent->UpdateCameraPan(PlayerController, SpringArm, DeltaTime, bSuppressCameraPan);
 		}
 	}
 
@@ -342,6 +346,11 @@ void AP_Player::HandleSquadCraftDefeated(ASquadCraftActor* DefeatedCraft)
 	if (PlayerCameraRigComponent)
 	{
 		PlayerCameraRigComponent->UpdateCameraAnchor(SpringArm, GetActiveCraft(), false);
+	}
+
+	if (PlayerCameraFeedbackComponent)
+	{
+		PlayerCameraFeedbackComponent->PlayCraftDestroyedShake(this);
 	}
 
 	if (!SquadRuntimeComponent->HasOperationalCrafts() && StatComponent)

@@ -35,6 +35,12 @@ void UBossOutPartPatternComponent::BeginPlay()
 		CommonAttackComponent->ApplyAttackConfig(CommonAttackConfig);
 	}
 
+	ResolvedCommonAttackAimLockDelay = FMath::Max(
+		0.0f,
+		CommonAttackAimLockDelay +
+		CommonAttackAimLockDelayOffset +
+		FMath::FRandRange(-CommonAttackAimLockDelayRandomVariance, CommonAttackAimLockDelayRandomVariance));
+
 	if (LaserAttackComponent)
 	{
 		LaserAttackComponent->SetFireOrigin(OwnerPart->GetSideFireOrigin());
@@ -44,7 +50,7 @@ void UBossOutPartPatternComponent::BeginPlay()
 
 bool UBossOutPartPatternComponent::FireCommonPattern(AActor* TargetActor)
 {
-	if (!CanStartPattern() || !OwnerPart || !CommonAttackComponent)
+	if (!CanStartPattern() || !OwnerPart || !CommonAttackComponent || bCommonAttackPending)
 	{
 		return false;
 	}
@@ -56,11 +62,21 @@ bool UBossOutPartPatternComponent::FireCommonPattern(AActor* TargetActor)
 	}
 
 	OwnerPart->SetUseSideAttackPose(false);
-	return CommonAttackComponent->TryAutoFireFromOrigin(
-		OwnerPart->GetFrontFireOrigin(),
-		ResolvedTarget->GetActorLocation(),
-		ResolvedTarget,
-		Cast<APawn>(OwnerPart));
+	PendingCommonAttackTargetPoint = ResolvedTarget->GetActorLocation();
+	bCommonAttackPending = true;
+
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(CommonAttackWindupTimerHandle);
+		GetWorld()->GetTimerManager().SetTimer(
+			CommonAttackWindupTimerHandle,
+			this,
+			&UBossOutPartPatternComponent::ExecutePendingCommonAttack,
+			ResolvedCommonAttackAimLockDelay,
+			false);
+	}
+
+	return true;
 }
 
 bool UBossOutPartPatternComponent::ExecuteSpecialPattern(AActor* TargetActor)
@@ -91,6 +107,7 @@ void UBossOutPartPatternComponent::StopActivePattern()
 	{
 		GetWorld()->GetTimerManager().ClearTimer(PatternFinishTimerHandle);
 		GetWorld()->GetTimerManager().ClearTimer(SummonSequenceTimerHandle);
+		GetWorld()->GetTimerManager().ClearTimer(CommonAttackWindupTimerHandle);
 	}
 
 	if (LaserAttackComponent)
@@ -110,6 +127,7 @@ void UBossOutPartPatternComponent::StopActivePattern()
 	}
 
 	PendingSummonSpawnCount = 0;
+	bCommonAttackPending = false;
 	FinishPattern();
 }
 
@@ -206,6 +224,23 @@ void UBossOutPartPatternComponent::FinishPattern()
 	{
 		OnPatternFinished.Broadcast(this);
 	}
+}
+
+void UBossOutPartPatternComponent::ExecutePendingCommonAttack()
+{
+	bCommonAttackPending = false;
+
+	if (!OwnerPart || !CommonAttackComponent || !CanStartPattern())
+	{
+		return;
+	}
+
+	OwnerPart->SetUseSideAttackPose(false);
+	CommonAttackComponent->TryAutoFireFromOrigin(
+		OwnerPart->GetFrontFireOrigin(),
+		PendingCommonAttackTargetPoint,
+		nullptr,
+		Cast<APawn>(OwnerPart));
 }
 
 bool UBossOutPartPatternComponent::ExecuteLaserPattern(AActor* TargetActor)

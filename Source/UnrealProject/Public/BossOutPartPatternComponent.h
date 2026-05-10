@@ -70,6 +70,15 @@ protected:
 	FCraftAttackConfig CommonAttackConfig;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Pattern", meta = (ClampMin = "0.0"))
+	float CommonAttackAimLockDelay = 0.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Pattern")
+	float CommonAttackAimLockDelayOffset = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Pattern", meta = (ClampMin = "0.0"))
+	float CommonAttackAimLockDelayRandomVariance = 0.08f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Pattern", meta = (ClampMin = "0.0"))
 	float CommonPatternLockDuration = 0.4f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|OutPart|Laser")
@@ -174,13 +183,18 @@ private:
 	TObjectPtr<ULaserAttackComponent> LaserAttackComponent;
 	FTimerHandle PatternFinishTimerHandle;
 	FTimerHandle SummonSequenceTimerHandle;
+	FTimerHandle CommonAttackWindupTimerHandle;
 	bool bPatternActive = false;
+	bool bCommonAttackPending = false;
 	int32 PendingSummonSpawnCount = 0;
 	float DisabledUntilTime = 0.0f;
+	float ResolvedCommonAttackAimLockDelay = 0.0f;
+	FVector PendingCommonAttackTargetPoint = FVector::ZeroVector;
 
 	AActor* ResolveTargetActor(AActor* TargetActor) const;
 	void BeginPatternLock(float LockDuration);
 	void FinishPattern();
+	void ExecutePendingCommonAttack();
 	void SpawnNextSummon();
 	bool ExecuteLaserPattern(AActor* TargetActor);
 	bool ExecuteSummonPattern();

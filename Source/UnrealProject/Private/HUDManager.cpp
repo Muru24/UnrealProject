@@ -271,6 +271,11 @@ void AHUDManager::SetMiniGameBattlePaused(bool bPaused)
 
         CompositeActor->SetActorTickEnabled(!bPaused);
 
+        if (UPathFollowerComponent* CompositePathFollowerComponent = CompositeActor->FindComponentByClass<UPathFollowerComponent>())
+        {
+            CompositePathFollowerComponent->SetComponentTickEnabled(!bPaused);
+        }
+
         if (UBossPatternSchedulerComponent* BossPatternSchedulerComponent = CompositeActor->FindComponentByClass<UBossPatternSchedulerComponent>())
         {
             BossPatternSchedulerComponent->SetComponentTickEnabled(!bPaused);
@@ -305,6 +310,11 @@ void AHUDManager::SetMiniGameBattlePaused(bool bPaused)
             }
 
             ChildPartActor->SetActorTickEnabled(!bPaused);
+
+            if (UPathFollowerComponent* ChildPathFollowerComponent = ChildPartActor->FindComponentByClass<UPathFollowerComponent>())
+            {
+                ChildPathFollowerComponent->SetComponentTickEnabled(!bPaused);
+            }
 
             if (UBossOutPartPatternComponent* BossOutPartPatternComponent = ChildPartActor->FindComponentByClass<UBossOutPartPatternComponent>())
             {

@@ -35,5 +35,6 @@ private:
 	void HandleHpChanged(float CurrentHp);
 
 	void HandleEnemyDefeated();
+	void PlayDefeatCameraShake() const;
 
 };

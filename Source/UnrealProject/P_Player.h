@@ -10,6 +10,7 @@ class UCameraComponent;
 class ULockOnComponent;
 class UPathFollowerComponent;
 class UPlayerAimFireComponent;
+class UPlayerCameraFeedbackComponent;
 class UPlayerCameraRigComponent;
 class UPlayerRailMovementComponent;
 class URailOffsetComponent;
@@ -51,6 +52,9 @@ protected:
 	TObjectPtr<UPlayerAimFireComponent> PlayerAimFireComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPlayerCameraFeedbackComponent> PlayerCameraFeedbackComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UPlayerCameraRigComponent> PlayerCameraRigComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -89,6 +93,8 @@ protected:
 	ASquadCraftActor* GetActiveCraft() const;
 
 public:
+	UPlayerCameraFeedbackComponent* GetPlayerCameraFeedbackComponent() const { return PlayerCameraFeedbackComponent; }
+
     UFUNCTION(BlueprintCallable, Category = "Skill")
     const TArray<AActor*>& GetSkillTargetEnemies() const { return SkillTargetEnemies; }
 

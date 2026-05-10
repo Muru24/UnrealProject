@@ -11,7 +11,7 @@
 
 namespace
 {
-	void ScheduleEffectDeactivate(UNiagaraComponent* EffectComponent, UWorld* World, float EffectDuration)
+	void ScheduleHealEffectDeactivate(UNiagaraComponent* EffectComponent, UWorld* World, float EffectDuration)
 	{
 		if (!IsValid(EffectComponent) || !IsValid(World) || EffectDuration <= 0.0f)
 		{
@@ -95,7 +95,7 @@ void USkillBuffHeal::PlayActivationEffect(AActor* TargetActor) const
 			true))
 		{
 			SpawnedEffect->SetWorldScale3D(EffectScale);
-			ScheduleEffectDeactivate(SpawnedEffect, TargetActor->GetWorld(), EffectDuration);
+			ScheduleHealEffectDeactivate(SpawnedEffect, TargetActor->GetWorld(), EffectDuration);
 		}
 	}
 	else
@@ -112,7 +112,7 @@ void USkillBuffHeal::PlayActivationEffect(AActor* TargetActor) const
 			true))
 		{
 			SpawnedEffect->SetWorldScale3D(EffectScale);
-			ScheduleEffectDeactivate(SpawnedEffect, TargetActor->GetWorld(), EffectDuration);
-		}
+			ScheduleHealEffectDeactivate(SpawnedEffect, TargetActor->GetWorld(), EffectDuration);
 	}
+}
 }

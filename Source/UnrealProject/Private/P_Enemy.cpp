@@ -4,8 +4,11 @@
 #include "P_Enemy.h"
 #include "EnemyRushComponent.h"
 #include "EnemyManager.h"
+#include "../P_Player.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "PlayerCameraFeedbackComponent.h"
 #include "StatComponent.h"
 
 AP_Enemy::AP_Enemy()
@@ -43,7 +46,9 @@ void AP_Enemy::HandleEnemyDefeated()
         return;
     }
 
-    bEnemyDefeated = true;
+	bEnemyDefeated = true;
+
+	PlayDefeatCameraShake();
 
     if (EnemyRushComponent)
     {
@@ -75,6 +80,20 @@ void AP_Enemy::HandleEnemyDefeated()
 	else
 	{
 		Destroy();
+	}
+}
+
+void AP_Enemy::PlayDefeatCameraShake() const
+{
+	AP_Player* PlayerPawn = Cast<AP_Player>(UGameplayStatics::GetPlayerPawn(this, 0));
+	if (!PlayerPawn)
+	{
+		return;
+	}
+
+	if (UPlayerCameraFeedbackComponent* CameraFeedback = PlayerPawn->GetPlayerCameraFeedbackComponent())
+	{
+		CameraFeedback->PlayEnemyDestroyedShake(PlayerPawn);
 	}
 }
 

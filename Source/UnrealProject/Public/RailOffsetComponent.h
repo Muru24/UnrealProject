@@ -17,6 +17,7 @@ public:
 	void UpdateOffset(float DeltaTime);
 
 	FVector2D GetCurrentOffset() const { return CurrentOffset; }
+	FVector2D GetCurrentInput() const { return CurrentInput; }
 	FRotator GetVisualTiltRotation() const { return VisualTiltRotation; }
 
 protected:

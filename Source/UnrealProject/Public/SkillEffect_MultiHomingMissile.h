@@ -25,13 +25,13 @@ protected:
     float FireInterval = 0.1f;
 
     UPROPERTY(EditAnywhere, Category = "Skill|Missile")
-    float MissileMoveSpeed = 1400.0f;
+    float MissileMoveSpeed = 1900.0f;
 
     UPROPERTY(EditAnywhere, Category = "Skill|Missile")
-    float MissileMaxSpeed = 1800.0f;
+    float MissileMaxSpeed = 2600.0f;
 
     UPROPERTY(EditAnywhere, Category = "Skill|Missile")
-    float MissileTurnInterpSpeed = 10.0f;
+    float MissileTurnInterpSpeed = 12.0f;
 
     UPROPERTY(EditAnywhere, Category = "Skill|Missile")
     float MissileInitialFireDelay = 0.0f;

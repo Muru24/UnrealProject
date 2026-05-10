@@ -18,6 +18,21 @@ public:
 	ASnakeBody();
 
 protected:
+	virtual void BeginPlay() override;
+	virtual void OnDissolveOutFinished() override;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class USnakeBodyChargeComponent* BodyChargeComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Snake|Death", meta = (ClampMin = "0.0"))
+	float DestroyDelay = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Snake|Death")
+	bool bSegmentDefeated = false;
+
+private:
+	UFUNCTION()
+	void HandleHpChanged(float CurrentHp);
+
+	void HandleSegmentDefeated();
 };

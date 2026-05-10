@@ -8,10 +8,17 @@ UPlayerCameraRigComponent::UPlayerCameraRigComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UPlayerCameraRigComponent::UpdateCameraPan(APlayerController* PlayerController, USpringArmComponent* SpringArmComponent, float DeltaTime) const
+void UPlayerCameraRigComponent::UpdateCameraPan(APlayerController* PlayerController, USpringArmComponent* SpringArmComponent, float DeltaTime, bool bSuppressPan) const
 {
 	if (!PlayerController || !SpringArmComponent)
 	{
+		return;
+	}
+
+	if (bSuppressPan)
+	{
+		SpringArmComponent->SetRelativeRotation(
+			FMath::RInterpTo(SpringArmComponent->GetRelativeRotation(), FRotator::ZeroRotator, DeltaTime, CameraMoveSpeed));
 		return;
 	}
 
@@ -109,4 +116,68 @@ void UPlayerCameraRigComponent::UpdateCameraZoom(USpringArmComponent* SpringArmC
 		TargetArmLength,
 		DeltaTime,
 		ZoomInterpSpeed);
+}
+
+void UPlayerCameraRigComponent::UpdateCameraShake(USpringArmComponent* SpringArmComponent, float DeltaTime) const
+{
+	if (!SpringArmComponent)
+	{
+		return;
+	}
+
+	if (!bHasCachedBaseSocketOffset)
+	{
+		CachedBaseSocketOffset = SpringArmComponent->SocketOffset;
+		bHasCachedBaseSocketOffset = true;
+	}
+
+	if (CurrentShakeRemainingTime > 0.0f && CurrentShakeDuration > 0.0f)
+	{
+		CurrentShakeElapsedTime += DeltaTime;
+		CurrentShakeRemainingTime = FMath::Max(0.0f, CurrentShakeRemainingTime - DeltaTime);
+
+		const float NormalizedStrength = FMath::Clamp(CurrentShakeRemainingTime / CurrentShakeDuration, 0.0f, 1.0f);
+		const float Frequency = FMath::Max(1.0f, CameraShakeFrequency);
+		const FVector Oscillation(
+			FMath::Sin(CurrentShakeElapsedTime * Frequency * 1.31f) * CurrentShakeOffsetAmplitude.X * NormalizedStrength,
+			FMath::Sin(CurrentShakeElapsedTime * Frequency * 1.79f) * CurrentShakeOffsetAmplitude.Y * NormalizedStrength,
+			FMath::Cos(CurrentShakeElapsedTime * Frequency * 1.57f) * CurrentShakeOffsetAmplitude.Z * NormalizedStrength);
+
+		SpringArmComponent->SocketOffset = CachedBaseSocketOffset + Oscillation;
+		return;
+	}
+
+	SpringArmComponent->SocketOffset = FMath::VInterpTo(
+		SpringArmComponent->SocketOffset,
+		CachedBaseSocketOffset,
+		DeltaTime,
+		CameraShakeReturnSpeed);
+}
+
+void UPlayerCameraRigComponent::TriggerCraftDestroyedShake() const
+{
+	TriggerProceduralShake(CraftDestroyedShakeOffsetAmplitude, CraftDestroyedShakeDuration);
+}
+
+void UPlayerCameraRigComponent::TriggerEnemyDestroyedShake() const
+{
+	TriggerProceduralShake(EnemyDestroyedShakeOffsetAmplitude, EnemyDestroyedShakeDuration);
+}
+
+void UPlayerCameraRigComponent::TriggerProceduralShake(const FVector& InAmplitude, float InDuration) const
+{
+	if (InDuration <= 0.0f)
+	{
+		return;
+	}
+
+	const float CurrentStrength = CurrentShakeOffsetAmplitude.SizeSquared() * CurrentShakeRemainingTime;
+	const float RequestedStrength = InAmplitude.SizeSquared() * InDuration;
+	if (RequestedStrength >= CurrentStrength)
+	{
+		CurrentShakeOffsetAmplitude = InAmplitude;
+		CurrentShakeDuration = InDuration;
+		CurrentShakeRemainingTime = InDuration;
+		CurrentShakeElapsedTime = 0.0f;
+	}
 }
